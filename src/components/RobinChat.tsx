@@ -53,7 +53,7 @@ export default function RobinChat({ shiftId, encounterId }: Props) {
           id: "greeting",
           role: "assistant",
           content:
-            "I'm Robin. I have full context on your shift — all encounters, transcripts, and notes. Ask me anything: documentation gaps, discharge instructions, patient summaries, or anything else.",
+            "Hey! I'm Robin — I've got full context on your shift and I'm ready to roll. Ask me anything: documentation gaps, discharge instructions, patient summaries, coding questions. Let's make this shift smooth.",
           created_at: new Date().toISOString(),
         };
         setMessages([greeting]);
