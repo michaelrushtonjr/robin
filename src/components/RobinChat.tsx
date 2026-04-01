@@ -23,7 +23,7 @@ export default function RobinChat({ shiftId, encounterId }: Props) {
   const [streaming, setStreaming] = useState(false);
   const [streamingText, setStreamingText] = useState("");
   const [unread, setUnread] = useState(false);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesScrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const abortRef = useRef<AbortController | null>(null);
 
@@ -63,7 +63,8 @@ export default function RobinChat({ shiftId, encounterId }: Props) {
 
   // Scroll to bottom on new messages
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    const el = messagesScrollRef.current;
+    if (el) el.scrollTop = el.scrollHeight;
   }, [messages, streamingText]);
 
   // Focus input when opened
@@ -211,7 +212,7 @@ export default function RobinChat({ shiftId, encounterId }: Props) {
           </div>
 
           {/* Messages */}
-          <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
+          <div ref={messagesScrollRef} className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
             {messages.map((msg) => (
               <div
                 key={msg.id}
@@ -262,7 +263,6 @@ export default function RobinChat({ shiftId, encounterId }: Props) {
               </div>
             )}
 
-            <div ref={messagesEndRef} />
           </div>
 
           {/* Input */}

@@ -9,10 +9,11 @@ interface Props {
 }
 
 export default function TranscriptFeed({ lines }: Props) {
-  const bottomRef = useRef<HTMLDivElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    const el = scrollRef.current;
+    if (el) el.scrollTop = el.scrollHeight;
   }, [lines]);
 
   return (
@@ -45,7 +46,7 @@ export default function TranscriptFeed({ lines }: Props) {
       </div>
 
       {/* Lines */}
-      <div className="flex flex-col gap-1 p-3 max-h-52 overflow-y-auto">
+      <div ref={scrollRef} className="flex flex-col gap-1 p-3 max-h-52 overflow-y-auto">
         <AnimatePresence initial={false}>
           {lines.length === 0 ? (
             <motion.p
@@ -61,7 +62,6 @@ export default function TranscriptFeed({ lines }: Props) {
             lines.map((line) => <TranscriptLine key={line.id} line={line} />)
           )}
         </AnimatePresence>
-        <div ref={bottomRef} />
       </div>
     </div>
   );
