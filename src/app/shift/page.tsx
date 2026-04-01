@@ -238,8 +238,8 @@ export default function ShiftDashboard() {
     <div className="mx-auto max-w-3xl px-4 py-8">
       {!activeShift ? (
         <div className="text-center">
-          <h2 className="text-2xl font-semibold text-gray-900">Ready to go?</h2>
-          <p className="mt-2 text-gray-600">Start your shift to begin.</p>
+          <h2 className="text-2xl font-semibold text-gray-900">Robin — Your On-Shift Sidekick</h2>
+          <p className="mt-2 text-gray-600">Ready when you are. Start your shift to begin.</p>
           <button
             onClick={startShift}
             className="mt-6 rounded-lg bg-blue-600 px-6 py-3 text-white font-medium hover:bg-blue-700"

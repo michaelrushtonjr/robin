@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Robin — Shift Copilot",
-  description: "Your on-shift clinical partner for emergency medicine",
+  title: "Robin — Your On-Shift Sidekick",
+  description: "Your on-shift sidekick for emergency medicine",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,

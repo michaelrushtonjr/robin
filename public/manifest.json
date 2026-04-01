@@ -1,7 +1,7 @@
 {
-  "name": "Robin — Shift Copilot",
+  "name": "Robin — Your On-Shift Sidekick",
   "short_name": "Robin",
-  "description": "Your on-shift clinical partner for emergency medicine",
+  "description": "Your on-shift sidekick for emergency medicine",
   "start_url": "/shift",
   "display": "standalone",
   "background_color": "#f9fafb",
