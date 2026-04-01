@@ -50,8 +50,8 @@ export async function buildRobinContext(
   const { data: physician } = user
     ? await supabase
         .from("physicians")
-        .select("full_name, robin_preferences")
-        .eq("user_id", user.id)
+        .select("display_name, robin_preferences")
+        .eq("id", user.id)
         .single()
     : { data: null };
 
@@ -138,7 +138,7 @@ ${currentEnc.generated_note ? `\nGenerated note:\n${currentEnc.generated_note.sl
 
 ─────────────────────────────────────────
 SHIFT CONTEXT
-Physician: Dr. ${physician?.full_name || "Unknown"}
+Physician: Dr. ${physician?.display_name || "Unknown"}
 Shift started: ${shiftStart} | Current time: ${now}
 ${prefBlock}${memoryBlock}
 

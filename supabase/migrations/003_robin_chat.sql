@@ -14,9 +14,8 @@ create policy "Physicians can manage their own robin messages"
   for all
   using (
     shift_id in (
-      select s.id from public.shifts s
-      join public.physicians p on s.physician_id = p.id
-      where p.user_id = auth.uid()
+      select id from public.shifts
+      where physician_id = auth.uid()
     )
   );
 
