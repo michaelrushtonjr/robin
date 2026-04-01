@@ -56,6 +56,7 @@ export default function EncounterPage({
   >([]);
   const [robinInsights, setRobinInsights] = useState<RobinInsight[]>([]);
   const [robinLoading, setRobinLoading] = useState(false);
+  const [revalAppended, setRevalAppended] = useState(false);
   const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -81,6 +82,13 @@ export default function EncounterPage({
     }
     load();
   }, [id, supabase]);
+
+  // Auto-save EHR mode preference immediately on change
+  useEffect(() => {
+    if (!id) return;
+    supabase.from("encounters").update({ ehr_mode: ehrMode }).eq("id", id);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ehrMode]);
 
   // Auto-save transcript 8 seconds after the last change
   useEffect(() => {
@@ -113,9 +121,12 @@ export default function EncounterPage({
     setRobinLoading(true);
     setRobinInsights([]);
 
+    const withTimeout = (p: Promise<Response>, ms: number) =>
+      Promise.race([p, new Promise<Response>((_, reject) => setTimeout(() => reject(new Error("timeout")), ms))]);
+
     // Fire clarification questions and Robin's documentation review in parallel
     const [clarRes, robinRes] = await Promise.allSettled([
-      fetch("/api/clarification-questions", {
+      withTimeout(fetch("/api/clarification-questions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -123,8 +134,8 @@ export default function EncounterPage({
           chiefComplaint: encounter?.chief_complaint,
           disposition: dispo,
         }),
-      }),
-      fetch("/api/robin-think", {
+      }), 25000),
+      withTimeout(fetch("/api/robin-think", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -132,7 +143,7 @@ export default function EncounterPage({
           chiefComplaint: encounter?.chief_complaint,
           disposition: dispo,
         }),
-      }),
+      }), 30000),
     ]);
 
     // Handle Robin insights
@@ -340,6 +351,7 @@ export default function EncounterPage({
               <p className="text-sm text-purple-900 italic">&ldquo;{revalText}&rdquo;</p>
             </div>
             <button
+              disabled={revalAppended}
               onClick={() => {
                 const ts = new Date().toLocaleTimeString([], {
                   hour: "2-digit",
@@ -350,10 +362,11 @@ export default function EncounterPage({
                     ? `${prev}\n\n[Re-evaluation ${ts}]\n${revalText}`
                     : `[Re-evaluation ${ts}]\n${revalText}`
                 );
+                setRevalAppended(true);
               }}
-              className="shrink-0 rounded-md bg-purple-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-purple-700"
+              className="shrink-0 rounded-md bg-purple-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-purple-700 disabled:opacity-50"
             >
-              Append
+              {revalAppended ? "Appended" : "Append"}
             </button>
           </div>
           <p className="text-xs text-purple-500 mt-2">
