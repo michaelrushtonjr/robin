@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback, useMemo } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import { useShiftAmbient } from "@/hooks/useShiftAmbient";
+import RobinChat from "@/components/RobinChat";
 
 interface Shift {
   id: string;
@@ -499,6 +500,9 @@ export default function ShiftDashboard() {
           </div>
         </div>
       )}
+
+      {/* Robin chat — available throughout the shift */}
+      {activeShift && <RobinChat shiftId={activeShift.id} />}
     </div>
   );
 }

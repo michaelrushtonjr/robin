@@ -11,10 +11,12 @@ import ClarificationPanel, {
   type ClarificationAnswer,
 } from "@/components/ClarificationPanel";
 import RobinInsightsPanel from "@/components/RobinInsightsPanel";
+import RobinChat from "@/components/RobinChat";
 import type { RobinInsight } from "@/lib/robinTypes";
 
 interface Encounter {
   id: string;
+  shift_id: string;
   room: string | null;
   chief_complaint: string | null;
   status: string;
@@ -432,6 +434,11 @@ export default function EncounterPage({
           />
         </div>
       </div>
+
+      {/* Robin chat — context-aware to this encounter */}
+      {encounter.shift_id && (
+        <RobinChat shiftId={encounter.shift_id} encounterId={id} />
+      )}
     </div>
   );
 }
