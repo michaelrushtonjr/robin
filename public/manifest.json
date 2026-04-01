@@ -1,0 +1,23 @@
+{
+  "name": "Robin — Shift Copilot",
+  "short_name": "Robin",
+  "description": "Your on-shift clinical partner for emergency medicine",
+  "start_url": "/shift",
+  "display": "standalone",
+  "background_color": "#f9fafb",
+  "theme_color": "#1e40af",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/api/pwa-icon?size=192",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/api/pwa-icon?size=512",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
