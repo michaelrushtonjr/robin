@@ -48,7 +48,6 @@ export default function RobinChat({ shiftId, encounterId }: Props) {
       if (data && data.length > 0) {
         setMessages(data);
       } else {
-        // First open — Robin sends a greeting
         const greeting: Message = {
           id: "greeting",
           role: "assistant",
@@ -92,7 +91,6 @@ export default function RobinChat({ shiftId, encounterId }: Props) {
     if (!text || streaming || !shiftId) return;
     setInput("");
 
-    // Optimistic user message
     const userMsg: Message = {
       id: crypto.randomUUID(),
       role: "user",
@@ -100,18 +98,14 @@ export default function RobinChat({ shiftId, encounterId }: Props) {
       created_at: new Date().toISOString(),
     };
     setMessages((prev) => [...prev, userMsg]);
-
-    // Save user message
     saveMessage("user", text);
 
-    // Build history for API (exclude optimistic greeting)
     const history = messages
       .filter((m) => m.id !== "greeting")
       .map((m) => ({ role: m.role, content: m.content }));
 
     setStreaming(true);
     setStreamingText("");
-
     abortRef.current = new AbortController();
 
     try {
@@ -143,7 +137,6 @@ export default function RobinChat({ shiftId, encounterId }: Props) {
         setStreamingText(fullText);
       }
 
-      // Commit streamed message
       const assistantMsg: Message = {
         id: crypto.randomUUID(),
         role: "assistant",
@@ -182,16 +175,28 @@ export default function RobinChat({ shiftId, encounterId }: Props) {
     <>
       {/* Chat panel */}
       {isOpen && (
-        <div className="fixed inset-0 sm:inset-auto sm:bottom-20 sm:right-6 z-50 flex flex-col sm:w-96 sm:h-[70vh] sm:max-h-[600px] bg-white sm:rounded-2xl shadow-2xl border border-gray-200 overflow-hidden">
+        <div
+          className="fixed inset-0 sm:inset-auto sm:bottom-20 sm:right-6 z-50 flex flex-col sm:w-96 sm:h-[70vh] sm:max-h-[600px] sm:rounded-2xl shadow-2xl overflow-hidden"
+          style={{
+            backgroundColor: "var(--surface)",
+            border: "1px solid var(--border)",
+          }}
+        >
           {/* Header */}
-          <div className="flex items-center justify-between px-4 py-3 bg-blue-700 text-white shrink-0">
+          <div
+            className="flex items-center justify-between px-4 py-3 shrink-0"
+            style={{ backgroundColor: "var(--robin)" }}
+          >
             <div className="flex items-center gap-2">
-              <span className="flex h-7 w-7 items-center justify-center rounded-full bg-white/20 text-sm font-bold">
+              <span
+                className="flex h-7 w-7 items-center justify-center rounded-full text-sm font-bold font-syne"
+                style={{ backgroundColor: "rgba(255,255,255,0.2)", color: "white" }}
+              >
                 R
               </span>
-              <span className="font-semibold text-sm">Robin</span>
+              <span className="font-bold text-sm text-white font-syne">Robin</span>
               {encounterId && (
-                <span className="text-xs text-blue-200 font-normal">
+                <span className="text-xs font-syne" style={{ color: "rgba(255,255,255,0.65)" }}>
                   · encounter context
                 </span>
               )}
@@ -213,11 +218,20 @@ export default function RobinChat({ shiftId, encounterId }: Props) {
                 className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
               >
                 <div
-                  className={`max-w-[85%] rounded-2xl px-3 py-2 text-sm leading-relaxed ${
+                  className="max-w-[85%] rounded-2xl px-3 py-2 text-sm leading-relaxed font-syne"
+                  style={
                     msg.role === "user"
-                      ? "bg-blue-600 text-white rounded-br-sm"
-                      : "bg-gray-100 text-gray-900 rounded-bl-sm"
-                  }`}
+                      ? {
+                          backgroundColor: "var(--robin)",
+                          color: "white",
+                          borderBottomRightRadius: "4px",
+                        }
+                      : {
+                          backgroundColor: "var(--surface2)",
+                          color: "var(--text)",
+                          borderBottomLeftRadius: "4px",
+                        }
+                  }
                 >
                   <p className="whitespace-pre-wrap">{msg.content}</p>
                 </div>
@@ -227,14 +241,21 @@ export default function RobinChat({ shiftId, encounterId }: Props) {
             {/* Streaming response */}
             {streaming && (
               <div className="flex justify-start">
-                <div className="max-w-[85%] rounded-2xl rounded-bl-sm bg-gray-100 px-3 py-2 text-sm text-gray-900 leading-relaxed">
+                <div
+                  className="max-w-[85%] rounded-2xl px-3 py-2 text-sm leading-relaxed font-syne"
+                  style={{
+                    backgroundColor: "var(--surface2)",
+                    color: "var(--text)",
+                    borderBottomLeftRadius: "4px",
+                  }}
+                >
                   {streamingText ? (
                     <p className="whitespace-pre-wrap">{streamingText}</p>
                   ) : (
                     <span className="flex gap-1 items-center h-5">
-                      <span className="h-1.5 w-1.5 rounded-full bg-gray-400 animate-bounce [animation-delay:0ms]" />
-                      <span className="h-1.5 w-1.5 rounded-full bg-gray-400 animate-bounce [animation-delay:150ms]" />
-                      <span className="h-1.5 w-1.5 rounded-full bg-gray-400 animate-bounce [animation-delay:300ms]" />
+                      <span className="h-1.5 w-1.5 rounded-full animate-bounce [animation-delay:0ms]" style={{ backgroundColor: "var(--muted)" }} />
+                      <span className="h-1.5 w-1.5 rounded-full animate-bounce [animation-delay:150ms]" style={{ backgroundColor: "var(--muted)" }} />
+                      <span className="h-1.5 w-1.5 rounded-full animate-bounce [animation-delay:300ms]" style={{ backgroundColor: "var(--muted)" }} />
                     </span>
                   )}
                 </div>
@@ -245,7 +266,10 @@ export default function RobinChat({ shiftId, encounterId }: Props) {
           </div>
 
           {/* Input */}
-          <div className="px-3 py-3 border-t border-gray-100 shrink-0">
+          <div
+            className="px-3 py-3 shrink-0"
+            style={{ borderTop: "1px solid var(--border)" }}
+          >
             <div className="flex items-center gap-2">
               <input
                 ref={inputRef}
@@ -255,12 +279,18 @@ export default function RobinChat({ shiftId, encounterId }: Props) {
                 onKeyDown={handleKeyDown}
                 placeholder="Ask Robin anything…"
                 disabled={streaming}
-                className="flex-1 rounded-full border border-gray-300 px-4 py-2 text-sm focus:border-blue-500 focus:outline-none disabled:opacity-50"
+                className="flex-1 rounded-full px-4 py-2 text-sm font-syne focus:outline-none disabled:opacity-50"
+                style={{
+                  border: "1px solid var(--border2)",
+                  backgroundColor: "var(--surface2)",
+                  color: "var(--text)",
+                }}
               />
               <button
                 onClick={sendMessage}
                 disabled={!input.trim() || streaming}
-                className="flex h-9 w-9 items-center justify-center rounded-full bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-40 shrink-0"
+                className="flex h-9 w-9 items-center justify-center rounded-full text-white disabled:opacity-40 shrink-0 transition-all active:scale-95"
+                style={{ backgroundColor: "var(--robin)" }}
                 aria-label="Send"
               >
                 <svg
@@ -283,7 +313,11 @@ export default function RobinChat({ shiftId, encounterId }: Props) {
           setIsOpen((prev) => !prev);
           setUnread(false);
         }}
-        className="fixed bottom-6 right-6 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-blue-700 text-white shadow-lg hover:bg-blue-800 transition-all active:scale-95"
+        className="fixed bottom-6 right-6 z-50 flex h-14 w-14 items-center justify-center rounded-full text-white shadow-lg transition-all active:scale-95"
+        style={{
+          backgroundColor: "var(--robin)",
+          boxShadow: "0 4px 16px rgba(224,75,32,0.35)",
+        }}
         aria-label="Open Robin"
       >
         {isOpen ? (
@@ -294,18 +328,16 @@ export default function RobinChat({ shiftId, encounterId }: Props) {
             viewBox="0 0 24 24"
             stroke="currentColor"
           >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M19 9l-7 7-7-7"
-            />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
           </svg>
         ) : (
-          <span className="text-lg font-bold tracking-tight">R</span>
+          <span className="text-lg font-bold font-syne">R</span>
         )}
         {unread && !isOpen && (
-          <span className="absolute top-1 right-1 h-3 w-3 rounded-full bg-red-500 border-2 border-white" />
+          <span
+            className="absolute top-1 right-1 h-3 w-3 rounded-full border-2"
+            style={{ backgroundColor: "var(--amber)", borderColor: "var(--surface)" }}
+          />
         )}
       </button>
     </>

@@ -30,9 +30,9 @@ const CATEGORY_LABELS: Record<ClarificationQuestion["category"], string> = {
 };
 
 const CATEGORY_COLORS: Record<ClarificationQuestion["category"], string> = {
-  data: "bg-blue-100 text-blue-700",
+  data: "bg-robin-dim text-robin",
   risk: "bg-orange-100 text-orange-700",
-  decision_tool: "bg-violet-100 text-violet-700",
+  decision_tool: "bg-amber-100 text-amber-700",
   liability: "bg-red-100 text-red-700",
   procedure: "bg-teal-100 text-teal-700",
 };
@@ -183,8 +183,8 @@ export default function ClarificationPanel({
                 {CATEGORY_LABELS[q.category]}
               </span>
               <div>
-                <p className="text-sm font-medium text-gray-900">{q.question}</p>
-                <p className="text-xs text-gray-500 mt-0.5">{q.why}</p>
+                <p className="text-sm font-semibold font-syne" style={{ color: "var(--text)" }}>{q.question}</p>
+                <p className="text-xs font-syne mt-0.5" style={{ color: "var(--muted)" }}>{q.why}</p>
               </div>
             </div>
 
@@ -200,7 +200,7 @@ export default function ClarificationPanel({
                       className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
                         answers[i] === qa.value
                           ? "border-amber-500 bg-amber-500 text-white"
-                          : "border-gray-300 bg-white text-gray-700 hover:border-amber-400"
+                          : "border-gray-300 text-gray-700 hover:border-amber-400"
                       }`}
                     >
                       {qa.label}
@@ -224,7 +224,7 @@ export default function ClarificationPanel({
                 className={`flex-1 rounded border px-3 py-2 text-sm focus:outline-none focus:ring-1 ${
                   listeningIndex === i
                     ? "border-red-400 focus:ring-red-400 bg-red-50"
-                    : "border-gray-300 focus:border-amber-400 focus:ring-amber-400"
+                    : "border-gray-300 focus:border-amber-400"
                 }`}
               />
               <button
@@ -236,7 +236,7 @@ export default function ClarificationPanel({
                 className={`rounded border px-3 py-2 text-sm transition-colors select-none ${
                   listeningIndex === i
                     ? "border-red-400 bg-red-500 text-white"
-                    : "border-gray-300 bg-white text-gray-500 hover:border-amber-400 hover:text-amber-600"
+                    : "border-gray-300 text-gray-500 hover:border-amber-400 hover:text-amber-600"
                 }`}
                 title="Hold to speak"
               >
