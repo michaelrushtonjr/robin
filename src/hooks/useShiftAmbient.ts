@@ -107,7 +107,7 @@ export function useShiftAmbient(): UseShiftAmbientReturn {
   const [pendingReval, setPendingReval] = useState<RevalCommand | null>(null);
   const [pendingBriefing, setPendingBriefing] = useState<PatientBriefing | null>(null);
 
-  const wakeLock = useWakeLock();
+  const { request: requestWakeLock, release: releaseWakeLock } = useWakeLock();
 
   const wsRef = useRef<WebSocket | null>(null);
   const processorRef = useRef<ScriptProcessorNode | null>(null);
@@ -233,7 +233,7 @@ export function useShiftAmbient(): UseShiftAmbientReturn {
         setIsConnected(true);
         setIsListening(true);
         isListeningRef.current = true;
-        wakeLock.request();
+        requestWakeLock();
 
         const audioContext = new AudioContext({ sampleRate: 16000 });
 
@@ -314,8 +314,8 @@ export function useShiftAmbient(): UseShiftAmbientReturn {
     }
     setIsListening(false);
     setIsConnected(false);
-    wakeLock.release();
-  }, [wakeLock]);
+    releaseWakeLock();
+  }, [releaseWakeLock]);
 
   const dismissPendingEncounter = useCallback(() => {
     setPendingEncounter(null);

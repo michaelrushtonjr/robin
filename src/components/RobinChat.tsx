@@ -11,7 +11,7 @@ interface Message {
 }
 
 interface Props {
-  shiftId: string;
+  shiftId?: string;
   encounterId?: string;
 }
 
@@ -29,7 +29,15 @@ export default function RobinChat({ shiftId, encounterId }: Props) {
 
   // Load chat history for this shift
   useEffect(() => {
-    if (!shiftId) return;
+    if (!shiftId) {
+      setMessages([{
+        id: "greeting",
+        role: "assistant",
+        content: "I'm Robin. Start your shift to begin.",
+        created_at: new Date().toISOString(),
+      }]);
+      return;
+    }
     async function loadHistory() {
       const { data } = await supabase
         .from("robin_messages")
@@ -81,7 +89,7 @@ export default function RobinChat({ shiftId, encounterId }: Props) {
 
   async function sendMessage() {
     const text = input.trim();
-    if (!text || streaming) return;
+    if (!text || streaming || !shiftId) return;
     setInput("");
 
     // Optimistic user message

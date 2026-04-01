@@ -501,8 +501,8 @@ export default function ShiftDashboard() {
         </div>
       )}
 
-      {/* Robin chat — available throughout the shift */}
-      {activeShift && <RobinChat shiftId={activeShift.id} />}
+      {/* Robin chat — always present, context-aware once shift is active */}
+      <RobinChat shiftId={activeShift?.id} />
     </div>
   );
 }
