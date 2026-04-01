@@ -33,20 +33,91 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50">
-      <div className="w-full max-w-md space-y-8 rounded-xl bg-white p-8 shadow-lg">
-        <div className="text-center">
-          <h1 className="text-3xl font-bold text-gray-900">Robin</h1>
-          <p className="mt-2 text-sm text-gray-600">
-            Your on-shift clinical partner
-          </p>
+    <div
+      className="flex min-h-screen items-center justify-center px-4"
+      style={{ backgroundColor: "var(--bg)" }}
+    >
+      <div
+        className="w-full max-w-sm rounded-[24px] p-8 space-y-7"
+        style={{
+          backgroundColor: "var(--surface)",
+          border: "1px solid var(--border)",
+          boxShadow: "0 8px 40px rgba(0,0,0,0.06)",
+        }}
+      >
+        {/* Logo + tagline */}
+        <div className="flex flex-col items-center gap-3">
+          <div
+            className="flex h-14 w-14 items-center justify-center rounded-2xl text-white font-bold font-syne text-xl shadow-lg"
+            style={{
+              backgroundColor: "var(--robin)",
+              boxShadow: "0 6px 20px rgba(224,75,32,0.28)",
+            }}
+          >
+            R
+          </div>
+          <div className="text-center">
+            <h1
+              className="text-2xl font-bold font-syne"
+              style={{ color: "var(--text)" }}
+            >
+              Robin
+            </h1>
+            <p
+              className="mt-1 text-sm font-syne"
+              style={{ color: "var(--muted)" }}
+            >
+              Your on-shift clinical partner
+            </p>
+          </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Tab toggle */}
+        <div
+          className="flex rounded-[12px] p-1"
+          style={{ backgroundColor: "var(--surface2)" }}
+        >
+          <button
+            type="button"
+            onClick={() => { setIsSignUp(false); setError(null); }}
+            className="flex-1 py-2 rounded-[9px] text-sm font-syne font-semibold transition-all"
+            style={
+              !isSignUp
+                ? {
+                    backgroundColor: "var(--surface)",
+                    color: "var(--text)",
+                    boxShadow: "0 1px 4px rgba(0,0,0,0.08)",
+                  }
+                : { color: "var(--muted)" }
+            }
+          >
+            Sign In
+          </button>
+          <button
+            type="button"
+            onClick={() => { setIsSignUp(true); setError(null); }}
+            className="flex-1 py-2 rounded-[9px] text-sm font-syne font-semibold transition-all"
+            style={
+              isSignUp
+                ? {
+                    backgroundColor: "var(--surface)",
+                    color: "var(--text)",
+                    boxShadow: "0 1px 4px rgba(0,0,0,0.08)",
+                  }
+                : { color: "var(--muted)" }
+            }
+          >
+            Sign Up
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Email */}
           <div>
             <label
               htmlFor="email"
-              className="block text-sm font-medium text-gray-700"
+              className="block text-[10px] font-bold font-space-mono uppercase tracking-widest mb-1.5"
+              style={{ color: "var(--muted)" }}
             >
               Email
             </label>
@@ -56,15 +127,22 @@ export default function LoginPage() {
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-              placeholder="you@example.com"
+              placeholder="you@hospital.com"
+              className="w-full rounded-[12px] border px-3.5 py-2.5 text-sm font-syne focus:outline-none transition-colors"
+              style={{
+                borderColor: "var(--border2)",
+                backgroundColor: "var(--surface2)",
+                color: "var(--text)",
+              }}
             />
           </div>
 
+          {/* Password */}
           <div>
             <label
               htmlFor="password"
-              className="block text-sm font-medium text-gray-700"
+              className="block text-[10px] font-bold font-space-mono uppercase tracking-widest mb-1.5"
+              style={{ color: "var(--muted)" }}
             >
               Password
             </label>
@@ -75,19 +153,36 @@ export default function LoginPage() {
               minLength={6}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
               placeholder="••••••••"
+              className="w-full rounded-[12px] border px-3.5 py-2.5 text-sm font-syne focus:outline-none transition-colors"
+              style={{
+                borderColor: "var(--border2)",
+                backgroundColor: "var(--surface2)",
+                color: "var(--text)",
+              }}
             />
           </div>
 
           {error && (
-            <p className="text-sm text-red-600">{error}</p>
+            <p
+              className="text-xs font-syne px-3 py-2 rounded-lg"
+              style={{
+                color: "var(--robin)",
+                backgroundColor: "var(--robin-dim)",
+              }}
+            >
+              {error}
+            </p>
           )}
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full rounded-lg bg-blue-600 px-4 py-2 text-white font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
+            className="w-full py-3 rounded-[14px] font-syne font-bold text-sm text-white transition-all active:scale-[0.98] disabled:opacity-50"
+            style={{
+              backgroundColor: "var(--robin)",
+              boxShadow: "0 3px 12px rgba(224,75,32,0.30)",
+            }}
           >
             {loading
               ? "Loading..."
@@ -96,21 +191,6 @@ export default function LoginPage() {
                 : "Sign In"}
           </button>
         </form>
-
-        <div className="text-center">
-          <button
-            type="button"
-            onClick={() => {
-              setIsSignUp(!isSignUp);
-              setError(null);
-            }}
-            className="text-sm text-blue-600 hover:text-blue-500"
-          >
-            {isSignUp
-              ? "Already have an account? Sign in"
-              : "Need an account? Sign up"}
-          </button>
-        </div>
       </div>
     </div>
   );

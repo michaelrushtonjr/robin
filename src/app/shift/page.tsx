@@ -35,6 +35,31 @@ function patientLabel(enc: Pick<Encounter, "age" | "gender" | "chief_complaint">
   return demo ? `${demo} — ${cc}` : cc;
 }
 
+function formatShiftDuration(startedAt: string): string {
+  const elapsed = Math.floor((Date.now() - new Date(startedAt).getTime()) / 1000);
+  const h = Math.floor(elapsed / 3600);
+  const m = Math.floor((elapsed % 3600) / 60);
+  const s = elapsed % 60;
+  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+}
+
+function StatusBadge({ status }: { status: string }) {
+  const styles: Record<string, { bg: string; color: string; label: string }> = {
+    active: { bg: "var(--robin-dim)", color: "var(--robin)", label: "Active" },
+    documenting: { bg: "var(--amber-dim)", color: "var(--amber)", label: "Documenting" },
+    completed: { bg: "rgba(0,168,150,0.08)", color: "var(--teal)", label: "Completed" },
+  };
+  const s = styles[status] ?? styles.active;
+  return (
+    <span
+      className="px-2 py-0.5 rounded-full text-[10px] font-bold font-space-mono uppercase tracking-wider"
+      style={{ backgroundColor: s.bg, color: s.color }}
+    >
+      {s.label}
+    </span>
+  );
+}
+
 export default function ShiftDashboard() {
   const supabase = createClient();
   const router = useRouter();
@@ -45,6 +70,7 @@ export default function ShiftDashboard() {
   const [newCC, setNewCC] = useState("");
   const [newAge, setNewAge] = useState("");
   const [newGender, setNewGender] = useState("");
+  const [shiftTimer, setShiftTimer] = useState("00:00:00");
 
   const ambient = useShiftAmbient();
 
@@ -74,6 +100,16 @@ export default function ShiftDashboard() {
   useEffect(() => {
     loadShift();
   }, [loadShift]);
+
+  // Shift timer
+  useEffect(() => {
+    if (!activeShift) return;
+    const id = setInterval(() => {
+      setShiftTimer(formatShiftDuration(activeShift.started_at));
+    }, 1000);
+    setShiftTimer(formatShiftDuration(activeShift.started_at));
+    return () => clearInterval(id);
+  }, [activeShift]);
 
   // Patient numbers: 1-indexed by creation order within the shift
   const patientNumbers = useMemo(() => {
@@ -228,107 +264,261 @@ export default function ShiftDashboard() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-20">
-        <p className="text-gray-500">Loading...</p>
+      <div className="flex items-center justify-center py-24">
+        <div className="flex flex-col items-center gap-3">
+          <div
+            className="h-8 w-8 rounded-full animate-pulse"
+            style={{ backgroundColor: "var(--robin-dim)" }}
+          />
+          <p className="text-xs font-space-mono" style={{ color: "var(--muted)" }}>
+            Loading...
+          </p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-8">
+    <div className="mx-auto max-w-3xl px-4 py-6 pb-28 space-y-5">
       {!activeShift ? (
-        <div className="text-center">
-          <h2 className="text-2xl font-semibold text-gray-900">Robin — Your On-Shift Sidekick</h2>
-          <p className="mt-2 text-gray-600">Ready when you are. Start your shift to begin.</p>
+        /* ── No active shift ─────────────────────────────────────────────── */
+        <div className="flex flex-col items-center justify-center py-24 gap-6 text-center">
+          {/* Robin logo mark */}
+          <div
+            className="flex h-16 w-16 items-center justify-center rounded-2xl text-white font-bold font-syne text-2xl shadow-lg"
+            style={{
+              backgroundColor: "var(--robin)",
+              boxShadow: "0 8px 24px rgba(224,75,32,0.25)",
+            }}
+          >
+            R
+          </div>
+
+          <div>
+            <h2
+              className="text-2xl font-bold font-syne"
+              style={{ color: "var(--text)" }}
+            >
+              Ready when you are.
+            </h2>
+            <p
+              className="mt-1.5 text-sm font-syne"
+              style={{ color: "var(--muted)" }}
+            >
+              Start your shift and Robin will help you stay on top of every patient.
+            </p>
+          </div>
+
           <button
             onClick={startShift}
-            className="mt-6 rounded-lg bg-blue-600 px-6 py-3 text-white font-medium hover:bg-blue-700"
+            className="mt-2 px-8 py-3.5 rounded-[14px] font-syne font-bold text-white text-sm transition-all active:scale-95"
+            style={{
+              backgroundColor: "var(--robin)",
+              boxShadow: "0 4px 16px rgba(224,75,32,0.30)",
+            }}
           >
             Start Shift
           </button>
         </div>
       ) : (
-        <div className="space-y-6">
+        /* ── Active shift ────────────────────────────────────────────────── */
+        <>
           {/* Shift header */}
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-2xl font-semibold text-gray-900">
-                Shift Active
-              </h2>
-              <p className="text-sm text-gray-500">
-                Started{" "}
-                {new Date(activeShift.started_at).toLocaleTimeString([], {
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })}
-              </p>
-            </div>
-            <button
-              onClick={endShift}
-              className="rounded-lg border border-red-300 px-4 py-2 text-sm text-red-600 hover:bg-red-50"
-            >
-              End Shift
-            </button>
-          </div>
-
-          {/* Ambient listening control */}
-          <div className="rounded-lg border border-gray-200 bg-white p-4">
+          <div
+            className="rounded-[18px] p-4"
+            style={{ backgroundColor: "var(--surface)", border: "1px solid var(--border)" }}
+          >
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-900">
-                  Ambient Listening
+                <p
+                  className="text-[9px] font-bold font-space-mono uppercase tracking-widest mb-1"
+                  style={{ color: "var(--muted)" }}
+                >
+                  Shift Active
                 </p>
-                <p className="text-xs text-gray-500 mt-0.5">
-                  {ambient.isListening
-                    ? ambient.isConnected
-                      ? "Robin is listening — will auto-detect new encounters"
-                      : "Connecting..."
-                    : "Robin will automatically detect when you start a new encounter"}
+                <p
+                  className="text-2xl font-bold font-space-mono"
+                  style={{ color: "var(--text)" }}
+                >
+                  {shiftTimer}
+                </p>
+                <p
+                  className="text-xs font-syne mt-0.5"
+                  style={{ color: "var(--muted)" }}
+                >
+                  Started{" "}
+                  {new Date(activeShift.started_at).toLocaleTimeString([], {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
                 </p>
               </div>
+
+              <div className="flex items-center gap-2">
+                {/* Encounter count badge */}
+                <div
+                  className="flex flex-col items-center px-3 py-2 rounded-[10px]"
+                  style={{ backgroundColor: "var(--surface2)" }}
+                >
+                  <span
+                    className="text-lg font-bold font-space-mono"
+                    style={{ color: "var(--text)" }}
+                  >
+                    {encounters.length}
+                  </span>
+                  <span
+                    className="text-[9px] font-space-mono uppercase tracking-wider"
+                    style={{ color: "var(--muted)" }}
+                  >
+                    Pts
+                  </span>
+                </div>
+
+                <button
+                  onClick={endShift}
+                  className="px-4 py-2.5 rounded-[12px] border font-syne font-semibold text-sm transition-all active:scale-95"
+                  style={{
+                    borderColor: "rgba(224,75,32,0.25)",
+                    color: "var(--robin)",
+                    backgroundColor: "var(--robin-dim)",
+                  }}
+                >
+                  End Shift
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Ambient listening */}
+          <div
+            className="rounded-[18px] p-4"
+            style={{ backgroundColor: "var(--surface)", border: "1px solid var(--border)" }}
+          >
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                {/* Status dot */}
+                <div
+                  className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full"
+                  style={{
+                    backgroundColor: ambient.isListening
+                      ? "var(--robin-dim)"
+                      : "var(--surface2)",
+                  }}
+                >
+                  {ambient.isListening && (
+                    <span
+                      className="absolute inset-0 rounded-full animate-ping opacity-20"
+                      style={{ backgroundColor: "var(--robin)" }}
+                    />
+                  )}
+                  <span
+                    className="h-2.5 w-2.5 rounded-full"
+                    style={{
+                      backgroundColor: ambient.isListening
+                        ? "var(--robin)"
+                        : "var(--muted)",
+                    }}
+                  />
+                </div>
+
+                <div>
+                  <p
+                    className="text-sm font-bold font-syne"
+                    style={{ color: "var(--text)" }}
+                  >
+                    Ambient Listening
+                  </p>
+                  <p
+                    className="text-xs font-syne mt-0.5"
+                    style={{ color: "var(--muted)" }}
+                  >
+                    {ambient.isListening
+                      ? ambient.isConnected
+                        ? "Robin is listening — auto-detecting new encounters"
+                        : "Connecting..."
+                      : "Robin will detect encounters and re-evals automatically"}
+                  </p>
+                </div>
+              </div>
+
               <button
-                onClick={
+                onClick={ambient.isListening ? ambient.stopListening : ambient.startListening}
+                className="shrink-0 px-4 py-2 rounded-[12px] border font-syne font-semibold text-sm transition-all active:scale-95"
+                style={
                   ambient.isListening
-                    ? ambient.stopListening
-                    : ambient.startListening
+                    ? {
+                        borderColor: "rgba(224,75,32,0.25)",
+                        color: "var(--robin)",
+                        backgroundColor: "var(--robin-dim)",
+                      }
+                    : {
+                        borderColor: "var(--border2)",
+                        color: "var(--text)",
+                        backgroundColor: "var(--surface2)",
+                      }
                 }
-                className={`flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
-                  ambient.isListening
-                    ? "bg-red-50 text-red-600 border border-red-200 hover:bg-red-100"
-                    : "bg-blue-600 text-white hover:bg-blue-700"
-                }`}
               >
-                {ambient.isListening && (
-                  <span className="h-2 w-2 animate-pulse rounded-full bg-red-500" />
-                )}
-                {ambient.isListening ? "Stop Listening" : "Start Listening"}
+                {ambient.isListening ? "Stop" : "Listen"}
               </button>
             </div>
+
             {ambient.error && (
-              <p className="mt-2 text-xs text-red-500">{ambient.error}</p>
+              <p
+                className="mt-3 text-xs font-syne px-3 py-2 rounded-lg"
+                style={{
+                  color: "var(--robin)",
+                  backgroundColor: "var(--robin-dim)",
+                }}
+              >
+                {ambient.error}
+              </p>
             )}
           </div>
 
           {/* Robin detected a new encounter */}
           {ambient.pendingEncounter && (
-            <div className="rounded-lg border border-blue-300 bg-blue-50 p-4">
+            <div
+              className="rounded-[18px] p-4"
+              style={{
+                backgroundColor: "var(--robin-dim)",
+                border: "1px solid rgba(224,75,32,0.20)",
+              }}
+            >
               <div className="flex items-start justify-between gap-4">
-                <div>
-                  <p className="text-sm font-semibold text-blue-900">
-                    Robin detected a new encounter
-                  </p>
-                  {ambient.pendingEncounter.chiefComplaint && (
-                    <p className="text-sm text-blue-700 mt-0.5">
-                      {ambient.pendingEncounter.chiefComplaint}
+                <div className="flex items-start gap-3">
+                  <div
+                    className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-white font-bold font-syne text-xs mt-0.5"
+                    style={{ backgroundColor: "var(--robin)" }}
+                  >
+                    R
+                  </div>
+                  <div>
+                    <p
+                      className="text-sm font-bold font-syne"
+                      style={{ color: "var(--robin)" }}
+                    >
+                      Robin detected a new encounter
                     </p>
-                  )}
-                  <p className="text-xs text-blue-500 mt-1">
-                    Confidence: {ambient.pendingEncounter.confidence}
-                  </p>
+                    {ambient.pendingEncounter.chiefComplaint && (
+                      <p
+                        className="text-sm font-syne mt-0.5"
+                        style={{ color: "var(--text)" }}
+                      >
+                        {ambient.pendingEncounter.chiefComplaint}
+                      </p>
+                    )}
+                    <p
+                      className="text-[10px] font-space-mono mt-1 uppercase tracking-wider"
+                      style={{ color: "rgba(224,75,32,0.60)" }}
+                    >
+                      Confidence: {ambient.pendingEncounter.confidence}
+                    </p>
+                  </div>
                 </div>
                 <button
                   onClick={ambient.dismissPendingEncounter}
-                  className="text-xs text-blue-400 hover:text-blue-600 shrink-0"
+                  className="text-xs font-syne shrink-0 mt-0.5"
+                  style={{ color: "rgba(224,75,32,0.50)" }}
                 >
                   Dismiss
                 </button>
@@ -336,24 +526,48 @@ export default function ShiftDashboard() {
             </div>
           )}
 
-          {/* Robin wake word — re-evaluation captured */}
+          {/* Robin re-evaluation captured */}
           {ambient.pendingReval && (
-            <div className="rounded-lg border border-purple-300 bg-purple-50 p-4">
+            <div
+              className="rounded-[18px] p-4"
+              style={{
+                backgroundColor: "var(--amber-dim)",
+                border: "1px solid rgba(245,166,35,0.20)",
+              }}
+            >
               <div className="flex items-start justify-between gap-4">
-                <div className="flex-1">
-                  <p className="text-sm font-semibold text-purple-900">
-                    Robin heard a re-evaluation
-                  </p>
-                  <p className="text-sm text-purple-700 mt-1 italic">
-                    &ldquo;{ambient.pendingReval.raw}&rdquo;
-                  </p>
-                  <p className="text-xs text-purple-500 mt-1">
-                    Open the relevant encounter to append this update.
-                  </p>
+                <div className="flex items-start gap-3">
+                  <div
+                    className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-white font-bold font-syne text-xs mt-0.5"
+                    style={{ backgroundColor: "var(--amber)" }}
+                  >
+                    R
+                  </div>
+                  <div>
+                    <p
+                      className="text-sm font-bold font-syne"
+                      style={{ color: "var(--amber)" }}
+                    >
+                      Re-evaluation captured
+                    </p>
+                    <p
+                      className="text-sm font-syne mt-0.5 italic"
+                      style={{ color: "var(--text)" }}
+                    >
+                      &ldquo;{ambient.pendingReval.raw}&rdquo;
+                    </p>
+                    <p
+                      className="text-[10px] font-space-mono mt-1"
+                      style={{ color: "rgba(245,166,35,0.70)" }}
+                    >
+                      Open the relevant encounter to append this update.
+                    </p>
+                  </div>
                 </div>
                 <button
                   onClick={ambient.dismissReval}
-                  className="text-xs text-purple-400 hover:text-purple-600 shrink-0"
+                  className="text-xs font-syne shrink-0 mt-0.5"
+                  style={{ color: "rgba(245,166,35,0.60)" }}
                 >
                   Dismiss
                 </button>
@@ -361,14 +575,26 @@ export default function ShiftDashboard() {
             </div>
           )}
 
-          {/* Manual encounter form */}
+          {/* Add encounter form */}
           <form
             onSubmit={addEncounter}
-            className="rounded-lg border border-gray-200 bg-white p-4 space-y-3"
+            className="rounded-[18px] p-4 space-y-3"
+            style={{ backgroundColor: "var(--surface)", border: "1px solid var(--border)" }}
           >
-            <div className="flex items-end gap-3">
-              <div className="w-20">
-                <label className="block text-xs font-medium text-gray-500 mb-1">
+            <p
+              className="text-[9px] font-bold font-space-mono uppercase tracking-widest"
+              style={{ color: "var(--muted)" }}
+            >
+              Add Encounter
+            </p>
+
+            <div className="flex items-end gap-2">
+              {/* Room */}
+              <div className="w-16">
+                <label
+                  className="block text-[10px] font-space-mono uppercase tracking-wider mb-1"
+                  style={{ color: "var(--muted)" }}
+                >
                   Room
                 </label>
                 <input
@@ -376,11 +602,21 @@ export default function ShiftDashboard() {
                   value={newRoom}
                   onChange={(e) => setNewRoom(e.target.value)}
                   placeholder="4"
-                  className="w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+                  className="w-full rounded-[10px] border px-2.5 py-2 text-sm font-syne focus:outline-none focus:ring-1"
+                  style={{
+                    borderColor: "var(--border2)",
+                    backgroundColor: "var(--surface2)",
+                    color: "var(--text)",
+                  }}
                 />
               </div>
-              <div className="w-16">
-                <label className="block text-xs font-medium text-gray-500 mb-1">
+
+              {/* Age */}
+              <div className="w-14">
+                <label
+                  className="block text-[10px] font-space-mono uppercase tracking-wider mb-1"
+                  style={{ color: "var(--muted)" }}
+                >
                   Age
                 </label>
                 <input
@@ -390,17 +626,32 @@ export default function ShiftDashboard() {
                   placeholder="74"
                   min="0"
                   max="150"
-                  className="w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+                  className="w-full rounded-[10px] border px-2.5 py-2 text-sm font-syne focus:outline-none"
+                  style={{
+                    borderColor: "var(--border2)",
+                    backgroundColor: "var(--surface2)",
+                    color: "var(--text)",
+                  }}
                 />
               </div>
-              <div className="w-20">
-                <label className="block text-xs font-medium text-gray-500 mb-1">
-                  Gender
+
+              {/* Gender */}
+              <div className="w-16">
+                <label
+                  className="block text-[10px] font-space-mono uppercase tracking-wider mb-1"
+                  style={{ color: "var(--muted)" }}
+                >
+                  Sex
                 </label>
                 <select
                   value={newGender}
                   onChange={(e) => setNewGender(e.target.value)}
-                  className="w-full rounded border border-gray-300 px-2 py-2 text-sm focus:border-blue-500 focus:outline-none"
+                  className="w-full rounded-[10px] border px-2 py-2 text-sm font-syne focus:outline-none"
+                  style={{
+                    borderColor: "var(--border2)",
+                    backgroundColor: "var(--surface2)",
+                    color: "var(--text)",
+                  }}
                 >
                   <option value="">—</option>
                   <option value="M">M</option>
@@ -408,8 +659,13 @@ export default function ShiftDashboard() {
                   <option value="X">X</option>
                 </select>
               </div>
+
+              {/* Chief complaint */}
               <div className="flex-1">
-                <label className="block text-xs font-medium text-gray-500 mb-1">
+                <label
+                  className="block text-[10px] font-space-mono uppercase tracking-wider mb-1"
+                  style={{ color: "var(--muted)" }}
+                >
                   Chief Complaint
                 </label>
                 <input
@@ -417,27 +673,50 @@ export default function ShiftDashboard() {
                   value={newCC}
                   onChange={(e) => setNewCC(e.target.value)}
                   placeholder="e.g. Chest pain"
-                  className="w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+                  className="w-full rounded-[10px] border px-2.5 py-2 text-sm font-syne focus:outline-none"
+                  style={{
+                    borderColor: "var(--border2)",
+                    backgroundColor: "var(--surface2)",
+                    color: "var(--text)",
+                  }}
                 />
               </div>
+
+              {/* Submit */}
               <button
                 type="submit"
-                className="rounded-lg bg-blue-600 px-4 py-2 text-sm text-white font-medium hover:bg-blue-700"
+                className="shrink-0 px-4 py-2 rounded-[10px] font-syne font-bold text-sm text-white transition-all active:scale-95"
+                style={{
+                  backgroundColor: "var(--robin)",
+                  boxShadow: "0 2px 8px rgba(224,75,32,0.25)",
+                }}
               >
-                + Encounter
+                + Add
               </button>
             </div>
           </form>
 
           {/* Encounter list */}
           <div className="space-y-2">
-            <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wide">
+            <p
+              className="text-[9px] font-bold font-space-mono uppercase tracking-widest px-1"
+              style={{ color: "var(--muted)" }}
+            >
               Encounters ({encounters.length})
-            </h3>
+            </p>
+
             {encounters.length === 0 ? (
-              <p className="text-sm text-gray-400 py-4">
-                No encounters yet. Start listening or add one manually.
-              </p>
+              <div
+                className="rounded-[18px] p-8 text-center"
+                style={{ backgroundColor: "var(--surface)", border: "1px solid var(--border)" }}
+              >
+                <p
+                  className="text-sm font-syne"
+                  style={{ color: "var(--muted)" }}
+                >
+                  No encounters yet. Start listening or add one manually.
+                </p>
+              </div>
             ) : (
               <div className="space-y-2">
                 {encounters.map((enc) => (
@@ -448,22 +727,50 @@ export default function ShiftDashboard() {
                         `/shift/encounter/${enc.id}?patient=${patientNumbers.get(enc.id)}`
                       )
                     }
-                    className="w-full flex items-center justify-between rounded-lg border border-gray-200 bg-white p-4 text-left hover:border-blue-300 hover:shadow-sm transition-all"
+                    className="w-full flex items-center justify-between rounded-[18px] p-4 text-left transition-all active:scale-[0.99]"
+                    style={{
+                      backgroundColor: "var(--surface)",
+                      border: "1px solid var(--border)",
+                    }}
                   >
-                    <div className="flex items-center gap-4">
-                      <span className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-100 text-sm font-bold text-gray-600 shrink-0">
+                    <div className="flex items-center gap-3">
+                      {/* Patient number badge */}
+                      <div
+                        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[10px] font-bold font-space-mono text-sm"
+                        style={{
+                          backgroundColor: "var(--robin-dim)",
+                          color: "var(--robin)",
+                        }}
+                      >
                         {patientNumbers.get(enc.id)}
-                      </span>
+                      </div>
+
+                      {/* Room badge */}
                       {enc.room && (
-                        <span className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-100 text-sm font-bold text-blue-700 shrink-0">
+                        <div
+                          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[10px] font-bold font-space-mono text-sm"
+                          style={{
+                            backgroundColor: "var(--surface2)",
+                            color: "var(--muted)",
+                            border: "1px solid var(--border2)",
+                          }}
+                        >
                           {enc.room}
-                        </span>
+                        </div>
                       )}
-                      <div>
-                        <p className="font-medium text-gray-900">
+
+                      {/* Patient label + time */}
+                      <div className="min-w-0">
+                        <p
+                          className="font-syne font-semibold text-sm truncate"
+                          style={{ color: "var(--text)" }}
+                        >
                           {patientLabel(enc)}
                         </p>
-                        <p className="text-xs text-gray-500">
+                        <p
+                          className="text-[10px] font-space-mono mt-0.5"
+                          style={{ color: "var(--muted)" }}
+                        >
                           {new Date(enc.created_at).toLocaleTimeString([], {
                             hour: "2-digit",
                             minute: "2-digit",
@@ -471,25 +778,28 @@ export default function ShiftDashboard() {
                         </p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                      <span
-                        className={`rounded-full px-2 py-1 text-xs font-medium ${
-                          enc.status === "completed"
-                            ? "bg-green-100 text-green-700"
-                            : enc.status === "documenting"
-                              ? "bg-yellow-100 text-yellow-700"
-                              : "bg-blue-100 text-blue-700"
-                        }`}
-                      >
-                        {enc.status}
-                      </span>
+
+                    <div className="flex items-center gap-2 shrink-0 ml-2">
+                      <StatusBadge status={enc.status} />
+
+                      {/* Delete */}
                       <button
                         onClick={(e) => deleteEncounter(enc.id, e)}
-                        className="rounded p-1 text-gray-300 hover:text-red-400 hover:bg-red-50 transition-colors"
-                        aria-label="Delete encounter"
+                        className="rounded-lg p-1.5 transition-colors"
+                        style={{ color: "var(--muted)" }}
+                        aria-label="Remove encounter"
                       >
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                          <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          className="h-3.5 w-3.5"
+                          viewBox="0 0 20 20"
+                          fill="currentColor"
+                        >
+                          <path
+                            fillRule="evenodd"
+                            d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                            clipRule="evenodd"
+                          />
                         </svg>
                       </button>
                     </div>
@@ -498,10 +808,10 @@ export default function ShiftDashboard() {
               </div>
             )}
           </div>
-        </div>
+        </>
       )}
 
-      {/* Robin chat — always present, context-aware once shift is active */}
+      {/* Robin chat — always present */}
       <RobinChat shiftId={activeShift?.id} />
     </div>
   );
