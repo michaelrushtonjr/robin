@@ -67,7 +67,7 @@ export default function LoginPage() {
               className="mt-1 text-sm font-syne"
               style={{ color: "var(--muted)" }}
             >
-              Your on-shift clinical partner
+              Your on-shift sidekick.
             </p>
           </div>
         </div>
