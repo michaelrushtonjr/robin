@@ -447,13 +447,13 @@ export default function RobinChat({ shiftId, encounterId, pendingRobinQuery, onR
         </div>
       )}
 
-      {/* Floating button */}
+      {/* Floating button — hidden on mobile when chat is open (× button closes it) */}
       <button
         onClick={() => {
           setIsOpen((prev) => !prev);
           setUnread(false);
         }}
-        className="fixed bottom-6 right-6 z-50 flex h-14 w-14 items-center justify-center rounded-full text-white shadow-lg transition-all active:scale-95"
+        className={`fixed bottom-6 right-6 z-50 h-14 w-14 items-center justify-center rounded-full text-white shadow-lg transition-all active:scale-95 ${isOpen ? "hidden sm:flex" : "flex"}`}
         style={{
           backgroundColor: "var(--robin)",
           boxShadow: "0 4px 16px rgba(224,75,32,0.35)",
