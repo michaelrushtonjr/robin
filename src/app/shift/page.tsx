@@ -812,7 +812,12 @@ export default function ShiftDashboard() {
       )}
 
       {/* Robin chat — always present */}
-      <RobinChat shiftId={activeShift?.id} />
+      <RobinChat
+        shiftId={activeShift?.id}
+        pendingRobinQuery={ambient.pendingRobinQuery}
+        onRobinQueryHandled={ambient.clearRobinQuery}
+        isAmbientListening={ambient.isListening}
+      />
     </div>
   );
 }

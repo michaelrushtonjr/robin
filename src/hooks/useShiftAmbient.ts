@@ -44,18 +44,22 @@ interface UseShiftAmbientReturn {
   pendingEncounter: DetectedEncounter | null;
   pendingReval: RevalCommand | null;
   pendingBriefing: PatientBriefing | null;
+  pendingRobinQuery: string | null;
   startListening: () => Promise<void>;
   stopListening: () => void;
   dismissPendingEncounter: () => void;
   confirmPendingEncounter: () => DetectedEncounter | null;
   dismissReval: () => void;
   dismissBriefing: () => void;
+  clearRobinQuery: () => void;
 }
 
 // Words to accumulate before running encounter detection
-const DETECTION_WORD_THRESHOLD = 12;
-// Minimum time between new encounter creations — no encounter is faster than 1 minute
-const DETECTION_COOLDOWN_MS = 60_000;
+const DETECTION_WORD_THRESHOLD = 6;
+// Cooldown after a SUCCESSFUL detection — encounters can't happen faster than 60s
+const DETECTION_SUCCESS_COOLDOWN_MS = 60_000;
+// Cooldown after a FAILED detection — retry sooner
+const DETECTION_FAIL_COOLDOWN_MS = 8_000;
 
 // EMS radio patterns — skip detection buffer entirely for these segments
 const RADIO_PATTERNS = [
@@ -79,19 +83,32 @@ function isRadioChatter(transcript: string): boolean {
 
 // Robin wake word patterns (case-insensitive)
 const ROBIN_WAKE_PATTERNS = [
+  /\bhey robin[,\s]*/i,
+  /\bok robin[,\s]*/i,
   /\brobin[,\s]+/i,
-  /\bhey robin[,\s]+/i,
-  /\bok robin[,\s]+/i,
 ];
 
-function extractRevalCommand(transcript: string): string | null {
+// Re-evaluation patterns — "patient N" style commands
+const REVAL_PATTERNS = [
+  /\bpatient\s+\d+\b/i,
+  /\broom\s+\d+\b/i,
+  /\bre-?eval\b/i,
+  /\bcheck\s+(back\s+)?on\b/i,
+  /\bfollow[\s-]up\b/i,
+];
+
+function isRevalCommand(command: string): boolean {
+  return REVAL_PATTERNS.some((p) => p.test(command));
+}
+
+function extractWakeCommand(transcript: string): string | null {
   for (const pattern of ROBIN_WAKE_PATTERNS) {
     const match = transcript.match(pattern);
     if (match) {
       const afterWake = transcript.slice(
         transcript.indexOf(match[0]) + match[0].length
       ).trim();
-      if (afterWake.length > 5) return afterWake;
+      if (afterWake.length > 3) return afterWake;
     }
   }
   return null;
@@ -106,6 +123,7 @@ export function useShiftAmbient(): UseShiftAmbientReturn {
     useState<DetectedEncounter | null>(null);
   const [pendingReval, setPendingReval] = useState<RevalCommand | null>(null);
   const [pendingBriefing, setPendingBriefing] = useState<PatientBriefing | null>(null);
+  const [pendingRobinQuery, setPendingRobinQuery] = useState<string | null>(null);
 
   const { request: requestWakeLock, release: releaseWakeLock } = useWakeLock();
 
@@ -117,13 +135,14 @@ export function useShiftAmbient(): UseShiftAmbientReturn {
   const isListeningRef = useRef(false);
 
   const detectionBufferRef = useRef("");
-  const lastDetectionRef = useRef(0);
+  const lastSuccessDetectionRef = useRef(0);
+  const lastAttemptRef = useRef(0);
   const detectingRef = useRef(false);
 
   const runDetection = useCallback(async (buffer: string) => {
     if (detectingRef.current) return;
     detectingRef.current = true;
-    lastDetectionRef.current = Date.now();
+    lastAttemptRef.current = Date.now();
     detectionBufferRef.current = "";
 
     try {
@@ -134,6 +153,7 @@ export function useShiftAmbient(): UseShiftAmbientReturn {
       });
       const data = await res.json();
       if (data.detected) {
+        lastSuccessDetectionRef.current = Date.now();
         setPendingEncounter({
           id: crypto.randomUUID(),
           chiefComplaint: data.chiefComplaint,
@@ -155,13 +175,16 @@ export function useShiftAmbient(): UseShiftAmbientReturn {
 
       // Always check for Robin wake word on every final segment
       if (isFinal) {
-        // Robin wake word — classify and handle immediately
-        const robinCommand = extractRevalCommand(transcript);
-        if (robinCommand) {
-          if (isPatientBriefing(robinCommand)) {
-            setPendingBriefing({ raw: robinCommand, detectedAt: Date.now() });
+        // Robin wake word — classify and route immediately
+        const wakeCommand = extractWakeCommand(transcript);
+        if (wakeCommand) {
+          if (isPatientBriefing(wakeCommand)) {
+            setPendingBriefing({ raw: wakeCommand, detectedAt: Date.now() });
+          } else if (isRevalCommand(wakeCommand)) {
+            setPendingReval({ raw: wakeCommand, detectedAt: Date.now() });
           } else {
-            setPendingReval({ raw: robinCommand, detectedAt: Date.now() });
+            // General query — send straight to Robin chat
+            setPendingRobinQuery(wakeCommand);
           }
           return;
         }
@@ -177,14 +200,13 @@ export function useShiftAmbient(): UseShiftAmbientReturn {
         detectionBufferRef.current += ` ${transcript}`;
 
         const wordCount = detectionBufferRef.current.trim().split(/\s+/).length;
-        const cooldownElapsed =
-          Date.now() - lastDetectionRef.current > DETECTION_COOLDOWN_MS;
+        const successCooldownElapsed =
+          Date.now() - lastSuccessDetectionRef.current > DETECTION_SUCCESS_COOLDOWN_MS;
+        const failCooldownElapsed =
+          Date.now() - lastAttemptRef.current > DETECTION_FAIL_COOLDOWN_MS;
+        const cooldownOk = successCooldownElapsed && failCooldownElapsed;
 
-        if (
-          wordCount >= DETECTION_WORD_THRESHOLD &&
-          cooldownElapsed &&
-          !pendingEncounter
-        ) {
+        if (wordCount >= DETECTION_WORD_THRESHOLD && cooldownOk && !pendingEncounter) {
           runDetection(detectionBufferRef.current.trim());
         }
       }
@@ -319,13 +341,13 @@ export function useShiftAmbient(): UseShiftAmbientReturn {
 
   const dismissPendingEncounter = useCallback(() => {
     setPendingEncounter(null);
-    lastDetectionRef.current = Date.now();
+    lastSuccessDetectionRef.current = Date.now();
   }, []);
 
   const confirmPendingEncounter = useCallback(() => {
     const enc = pendingEncounter;
     setPendingEncounter(null);
-    lastDetectionRef.current = Date.now();
+    lastSuccessDetectionRef.current = Date.now();
     return enc;
   }, [pendingEncounter]);
 
@@ -335,6 +357,10 @@ export function useShiftAmbient(): UseShiftAmbientReturn {
 
   const dismissBriefing = useCallback(() => {
     setPendingBriefing(null);
+  }, []);
+
+  const clearRobinQuery = useCallback(() => {
+    setPendingRobinQuery(null);
   }, []);
 
   useEffect(() => {
@@ -352,11 +378,13 @@ export function useShiftAmbient(): UseShiftAmbientReturn {
     pendingEncounter,
     pendingReval,
     pendingBriefing,
+    pendingRobinQuery,
     startListening,
     stopListening,
     dismissPendingEncounter,
     confirmPendingEncounter,
     dismissReval,
     dismissBriefing,
+    clearRobinQuery,
   };
 }

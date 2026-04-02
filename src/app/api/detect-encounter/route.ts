@@ -14,30 +14,31 @@ export async function POST(request: Request) {
     max_tokens: 200,
     system: `You are monitoring an ED ambient audio stream for Robin, an AI shift copilot.
 
-Your job: detect ONLY the very beginning of a brand new clinical encounter — the moment a physician first meets a new patient.
+Your job: detect the beginning of a new clinical encounter — the moment a physician starts interacting with a new patient.
 
-## STRONG TRIGGERS — these almost certainly mark a new encounter:
-- Physician introduction: "Hi I'm Dr.", "Hello I'm Dr.", "I'm Dr. [name]", "My name is Dr."
-- Opening patient question: "What brings you in today?", "What's bringing you in?", "What brings you to the ER today?", "What's going on today?", "What happened?", "Tell me what's going on", "How can I help you today?", "What can I do for you today?"
-- EMS handoff opening: "We have a [age/sex]", "EMS here with", "Brought in by EMS", "So we picked up", "This is [name], [age]-year-old"
-- Triage intake opening: "What's your name?", "Date of birth?", "What's the chief complaint?"
+## TRIGGERS — any of these indicate a new encounter has started:
+- Physician introduction (explicit): "Hi I'm Dr.", "I'm Dr. [name]", "My name is Dr."
+- Physician introduction (informal): "Hey, I'm one of the doctors", "I'm the doc today", "I'll be taking care of you"
+- Opening question (formal): "What brings you in today?", "What's going on today?", "What happened?"
+- Opening question (informal): "So what's going on?", "Tell me what's happening", "What's up?", "How are you feeling?", "So what brings you in?"
+- Patient presenting symptoms unprompted: Patient starts describing a new complaint in a conversational tone
+- EMS/triage handoff: "We have a [age/sex]", "EMS here with", "Brought in by EMS", "[age]-year-old with", "chief complaint of"
+- Triage intake: "What's your name?", "Date of birth?", "What's the chief complaint?", "What's your pain level?"
+- Nurse introducing physician: "The doctor is here to see you", "Dr. [name] will be right with you"
 
 ## DO NOT TRIGGER on:
-- EMS radio calls: incoming radio traffic before the patient arrives ("medic 7 to base", "we're en route", "ETA 5 minutes", "copy that", "over", call signs, unit numbers, radio sign-offs). The patient is not yet present — no encounter has started.
-- Mid-encounter clinical talk (ordering labs, reviewing results, exam findings, treatment discussion)
-- Consultant phone calls mid-encounter
-- Staff-to-staff conversation with no patient introduction
-- A physician continuing to talk with the same patient they already introduced themselves to
-- Re-evaluations, follow-up checks on same patient
-- General background conversation
-- Incomplete fragments
+- EMS radio traffic before arrival ("medic 7 to base", "en route", "ETA", "copy that", "over", 10-codes)
+- Pure staff-to-staff conversation with no patient present
+- Mid-encounter orders, labs, results ("let's get a chest X-ray", "CBC came back")
+- Re-evaluation of a patient already seen ("going back to check on", "following up on")
+- General hallway/break room conversation
 
-## RULE: When in doubt, do NOT trigger. False negatives are better than false positives.
+## GUIDELINE: Lean toward triggering. A false positive (missed new encounter detection) is worse than a brief false alarm. If there's a reasonable chance a new patient encounter is starting, trigger it.
 
 Respond in JSON only:
 { "detected": true/false, "chiefComplaint": "string or null", "confidence": "high/medium/low" }
 
-Only set detected=true if you see a STRONG TRIGGER. Set confidence="high" only for explicit physician introduction or explicit opening question.`,
+Set confidence="high" for explicit introductions or clear opening questions. Set confidence="medium" for patient presenting symptoms or informal openers.`,
     messages: [
       {
         role: "user",

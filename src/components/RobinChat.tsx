@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { createDeepgramSocket } from "@/lib/deepgram";
 
 interface Message {
   id: string;
@@ -13,9 +14,12 @@ interface Message {
 interface Props {
   shiftId?: string;
   encounterId?: string;
+  pendingRobinQuery?: string | null;
+  onRobinQueryHandled?: () => void;
+  isAmbientListening?: boolean;
 }
 
-export default function RobinChat({ shiftId, encounterId }: Props) {
+export default function RobinChat({ shiftId, encounterId, pendingRobinQuery, onRobinQueryHandled, isAmbientListening }: Props) {
   const supabase = createClient();
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -26,6 +30,11 @@ export default function RobinChat({ shiftId, encounterId }: Props) {
   const messagesScrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const abortRef = useRef<AbortController | null>(null);
+  const [isVoiceListening, setIsVoiceListening] = useState(false);
+  const voiceWsRef = useRef<WebSocket | null>(null);
+  const voiceProcessorRef = useRef<ScriptProcessorNode | null>(null);
+  const voiceContextRef = useRef<AudioContext | null>(null);
+  const voiceStreamRef = useRef<MediaStream | null>(null);
 
   // Load chat history for this shift
   useEffect(() => {
@@ -172,6 +181,123 @@ export default function RobinChat({ shiftId, encounterId }: Props) {
     }
   }
 
+  // Auto-open and send when "Hey Robin" is heard via ambient
+  useEffect(() => {
+    if (!pendingRobinQuery || !shiftId) return;
+    setIsOpen(true);
+    setInput(pendingRobinQuery);
+    onRobinQueryHandled?.();
+    // Small delay so the chat opens visually before sending
+    const t = setTimeout(() => {
+      setInput("");
+      const userMsg: Message = {
+        id: crypto.randomUUID(),
+        role: "user",
+        content: pendingRobinQuery,
+        created_at: new Date().toISOString(),
+      };
+      setMessages((prev) => [...prev, userMsg]);
+      saveMessage("user", pendingRobinQuery);
+
+      const history = messages
+        .filter((m) => m.id !== "greeting")
+        .map((m) => ({ role: m.role, content: m.content }));
+
+      setStreaming(true);
+      setStreamingText("");
+      abortRef.current = new AbortController();
+
+      fetch("/api/robin-chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: pendingRobinQuery, shiftId, encounterId: encounterId ?? null, history }),
+        signal: abortRef.current.signal,
+      }).then(async (response) => {
+        if (!response.ok || !response.body) return;
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let fullText = "";
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          fullText += decoder.decode(value, { stream: true });
+          setStreamingText(fullText);
+        }
+        const assistantMsg: Message = { id: crypto.randomUUID(), role: "assistant", content: fullText, created_at: new Date().toISOString() };
+        setMessages((prev) => [...prev, assistantMsg]);
+        saveMessage("assistant", fullText);
+      }).catch(() => {}).finally(() => { setStreaming(false); setStreamingText(""); });
+    }, 300);
+    return () => clearTimeout(t);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendingRobinQuery]);
+
+  // Voice mic for chat input
+  const stopVoice = useCallback(() => {
+    voiceProcessorRef.current?.disconnect();
+    voiceProcessorRef.current = null;
+    voiceContextRef.current?.close();
+    voiceContextRef.current = null;
+    voiceStreamRef.current?.getTracks().forEach((t) => t.stop());
+    voiceStreamRef.current = null;
+    if (voiceWsRef.current?.readyState === WebSocket.OPEN) {
+      voiceWsRef.current.send(JSON.stringify({ type: "CloseStream" }));
+      voiceWsRef.current.close();
+    }
+    voiceWsRef.current = null;
+    setIsVoiceListening(false);
+  }, []);
+
+  const startVoice = useCallback(async () => {
+    if (isVoiceListening) { stopVoice(); return; }
+    const apiKey = process.env.NEXT_PUBLIC_DEEPGRAM_API_KEY;
+    if (!apiKey) return;
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: { channelCount: 1, sampleRate: 16000, echoCancellation: true } });
+      voiceStreamRef.current = stream;
+      setIsVoiceListening(true);
+
+      const ws = createDeepgramSocket(
+        { apiKey, interimResults: true, utteranceEndMs: 1000 },
+        (data) => {
+          const t = data.channel?.alternatives[0]?.transcript || "";
+          if (!t) return;
+          if (data.speech_final) {
+            setInput(t);
+            stopVoice();
+          } else if (!data.is_final) {
+            setInput(t);
+          }
+        },
+        () => stopVoice(),
+        () => setIsVoiceListening(false)
+      );
+
+      ws.onopen = () => {
+        const ctx = new AudioContext({ sampleRate: 16000 });
+        const src = ctx.createMediaStreamSource(stream);
+        const proc = ctx.createScriptProcessor(4096, 1, 1);
+        proc.onaudioprocess = (e) => {
+          if (ws.readyState !== WebSocket.OPEN) return;
+          const input = e.inputBuffer.getChannelData(0);
+          const pcm = new Int16Array(input.length);
+          for (let i = 0; i < input.length; i++) {
+            const s = Math.max(-1, Math.min(1, input[i]));
+            pcm[i] = s < 0 ? s * 0x8000 : s * 0x7fff;
+          }
+          ws.send(pcm.buffer);
+        };
+        src.connect(proc);
+        proc.connect(ctx.destination);
+        voiceProcessorRef.current = proc;
+        voiceContextRef.current = ctx;
+      };
+      voiceWsRef.current = ws;
+    } catch { setIsVoiceListening(false); }
+  }, [isVoiceListening, stopVoice]);
+
+  useEffect(() => () => stopVoice(), [stopVoice]);
+
   return (
     <>
       {/* Chat panel */}
@@ -267,22 +393,41 @@ export default function RobinChat({ shiftId, encounterId }: Props) {
 
           {/* Input */}
           <div
-            className="px-3 py-3 shrink-0"
+            className="px-3 pt-3 pb-[max(12px,env(safe-area-inset-bottom))] shrink-0"
             style={{ borderTop: "1px solid var(--border)" }}
           >
             <div className="flex items-center gap-2">
+              {/* Voice mic button */}
+              <button
+                onClick={startVoice}
+                className="flex h-9 w-9 items-center justify-center rounded-full shrink-0 transition-all active:scale-95"
+                style={isVoiceListening
+                  ? { backgroundColor: "var(--robin)", color: "white" }
+                  : { backgroundColor: "var(--surface2)", color: "var(--muted)", border: "1px solid var(--border2)" }
+                }
+                aria-label={isVoiceListening ? "Stop listening" : "Speak"}
+              >
+                {isVoiceListening ? (
+                  <span className="h-2 w-2 rounded-full bg-white animate-pulse" />
+                ) : (
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 1a4 4 0 0 1 4 4v6a4 4 0 0 1-8 0V5a4 4 0 0 1 4-4zm-7 10a1 1 0 0 1 2 0 5 5 0 0 0 10 0 1 1 0 0 1 2 0 7 7 0 0 1-6 6.92V20h2a1 1 0 0 1 0 2H9a1 1 0 0 1 0-2h2v-2.08A7 7 0 0 1 5 11z"/>
+                  </svg>
+                )}
+              </button>
+
               <input
                 ref={inputRef}
                 type="text"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder="Ask Robin anything…"
+                placeholder={isVoiceListening ? "Listening…" : "Ask Robin anything…"}
                 disabled={streaming}
                 className="flex-1 rounded-full px-4 py-2 text-sm font-syne focus:outline-none disabled:opacity-50"
                 style={{
                   border: "1px solid var(--border2)",
-                  backgroundColor: "var(--surface2)",
+                  backgroundColor: isVoiceListening ? "var(--robin-dim)" : "var(--surface2)",
                   color: "var(--text)",
                 }}
               />
@@ -293,12 +438,7 @@ export default function RobinChat({ shiftId, encounterId }: Props) {
                 style={{ backgroundColor: "var(--robin)" }}
                 aria-label="Send"
               >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-4 w-4 rotate-90"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
-                >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 rotate-90" viewBox="0 0 20 20" fill="currentColor">
                   <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" />
                 </svg>
               </button>
@@ -320,14 +460,15 @@ export default function RobinChat({ shiftId, encounterId }: Props) {
         }}
         aria-label="Open Robin"
       >
+        {/* Ambient listening ring */}
+        {isAmbientListening && !isOpen && (
+          <span
+            className="absolute inset-0 rounded-full animate-ping opacity-30"
+            style={{ backgroundColor: "var(--robin)" }}
+          />
+        )}
         {isOpen ? (
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="h-6 w-6"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
           </svg>
         ) : (
