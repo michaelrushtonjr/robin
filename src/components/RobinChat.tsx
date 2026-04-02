@@ -16,10 +16,14 @@ interface Props {
   encounterId?: string;
   pendingRobinQuery?: string | null;
   onRobinQueryHandled?: () => void;
+  robinActivated?: boolean;           // wake word heard, no command — open + activate mic
+  onRobinActivatedHandled?: () => void;
   isAmbientListening?: boolean;
+  onVoiceStart?: () => void;          // tell ambient to pause
+  onVoiceEnd?: () => void;            // tell ambient to resume
 }
 
-export default function RobinChat({ shiftId, encounterId, pendingRobinQuery, onRobinQueryHandled, isAmbientListening }: Props) {
+export default function RobinChat({ shiftId, encounterId, pendingRobinQuery, onRobinQueryHandled, robinActivated, onRobinActivatedHandled, isAmbientListening, onVoiceStart, onVoiceEnd }: Props) {
   const supabase = createClient();
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -31,6 +35,7 @@ export default function RobinChat({ shiftId, encounterId, pendingRobinQuery, onR
   const inputRef = useRef<HTMLInputElement>(null);
   const abortRef = useRef<AbortController | null>(null);
   const [isVoiceListening, setIsVoiceListening] = useState(false);
+  const [heardBanner, setHeardBanner] = useState(false);
   const voiceWsRef = useRef<WebSocket | null>(null);
   const voiceProcessorRef = useRef<ScriptProcessorNode | null>(null);
   const voiceContextRef = useRef<AudioContext | null>(null);
@@ -181,23 +186,38 @@ export default function RobinChat({ shiftId, encounterId, pendingRobinQuery, onR
     }
   }
 
+  // Wake word heard with no/short follow-up — open chat + start voice mic
+  useEffect(() => {
+    if (!robinActivated) return;
+    setIsOpen(true);
+    setHeardBanner(true);
+    onRobinActivatedHandled?.();
+    const t = setTimeout(() => setHeardBanner(false), 2500);
+    // Small delay then auto-activate voice
+    const v = setTimeout(() => startVoice(), 400);
+    return () => { clearTimeout(t); clearTimeout(v); };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [robinActivated]);
+
   // Auto-open and send when "Hey Robin" is heard via ambient
   useEffect(() => {
     if (!pendingRobinQuery || !shiftId) return;
+    const query = pendingRobinQuery;
     setIsOpen(true);
-    setInput(pendingRobinQuery);
+    setHeardBanner(true);
     onRobinQueryHandled?.();
+    const bannerTimer = setTimeout(() => setHeardBanner(false), 2500);
     // Small delay so the chat opens visually before sending
     const t = setTimeout(() => {
       setInput("");
       const userMsg: Message = {
         id: crypto.randomUUID(),
         role: "user",
-        content: pendingRobinQuery,
+        content: query,
         created_at: new Date().toISOString(),
       };
       setMessages((prev) => [...prev, userMsg]);
-      saveMessage("user", pendingRobinQuery);
+      saveMessage("user", query);
 
       const history = messages
         .filter((m) => m.id !== "greeting")
@@ -210,7 +230,7 @@ export default function RobinChat({ shiftId, encounterId, pendingRobinQuery, onR
       fetch("/api/robin-chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: pendingRobinQuery, shiftId, encounterId: encounterId ?? null, history }),
+        body: JSON.stringify({ message: query, shiftId, encounterId: encounterId ?? null, history }),
         signal: abortRef.current.signal,
       }).then(async (response) => {
         if (!response.ok || !response.body) return;
@@ -228,7 +248,7 @@ export default function RobinChat({ shiftId, encounterId, pendingRobinQuery, onR
         saveMessage("assistant", fullText);
       }).catch(() => {}).finally(() => { setStreaming(false); setStreamingText(""); });
     }, 300);
-    return () => clearTimeout(t);
+    return () => { clearTimeout(t); clearTimeout(bannerTimer); };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pendingRobinQuery]);
 
@@ -246,12 +266,18 @@ export default function RobinChat({ shiftId, encounterId, pendingRobinQuery, onR
     }
     voiceWsRef.current = null;
     setIsVoiceListening(false);
-  }, []);
+    // Hand mic back to ambient
+    onVoiceEnd?.();
+  }, [onVoiceEnd]);
 
   const startVoice = useCallback(async () => {
     if (isVoiceListening) { stopVoice(); return; }
     const apiKey = process.env.NEXT_PUBLIC_DEEPGRAM_API_KEY;
     if (!apiKey) return;
+    // Pause ambient before grabbing mic
+    onVoiceStart?.();
+    // Brief pause to let the ambient stream fully release the mic on iOS
+    await new Promise((r) => setTimeout(r, 400));
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: { channelCount: 1, sampleRate: 16000, echoCancellation: true } });
       voiceStreamRef.current = stream;
@@ -336,6 +362,17 @@ export default function RobinChat({ shiftId, encounterId, pendingRobinQuery, onR
               ×
             </button>
           </div>
+
+          {/* "Robin heard you" banner */}
+          {heardBanner && (
+            <div
+              className="flex items-center gap-2 px-4 py-2 text-xs font-syne font-semibold shrink-0"
+              style={{ backgroundColor: "var(--robin-dim)", color: "var(--robin)" }}
+            >
+              <span className="h-1.5 w-1.5 rounded-full animate-pulse" style={{ backgroundColor: "var(--robin)" }} />
+              Robin heard you — listening…
+            </div>
+          )}
 
           {/* Messages */}
           <div ref={messagesScrollRef} className="flex-1 overflow-y-auto px-4 py-4 space-y-3">

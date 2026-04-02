@@ -816,7 +816,11 @@ export default function ShiftDashboard() {
         shiftId={activeShift?.id}
         pendingRobinQuery={ambient.pendingRobinQuery}
         onRobinQueryHandled={ambient.clearRobinQuery}
-        isAmbientListening={ambient.isListening}
+        robinActivated={ambient.robinActivated}
+        onRobinActivatedHandled={ambient.clearRobinActivated}
+        isAmbientListening={ambient.isListening && !ambient.isPausedForRobin}
+        onVoiceStart={ambient.pauseForRobin}
+        onVoiceEnd={ambient.resumeFromRobin}
       />
     </div>
   );

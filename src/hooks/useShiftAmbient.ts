@@ -39,19 +39,24 @@ function isPatientBriefing(command: string): boolean {
 interface UseShiftAmbientReturn {
   isListening: boolean;
   isConnected: boolean;
+  isPausedForRobin: boolean;
   error: string | null;
   currentTranscript: string;
   pendingEncounter: DetectedEncounter | null;
   pendingReval: RevalCommand | null;
   pendingBriefing: PatientBriefing | null;
   pendingRobinQuery: string | null;
+  robinActivated: boolean;          // true briefly after wake word — triggers voice mic
   startListening: () => Promise<void>;
   stopListening: () => void;
+  pauseForRobin: () => void;        // release mic so Robin chat can take over
+  resumeFromRobin: () => void;      // restart ambient after Robin chat finishes
   dismissPendingEncounter: () => void;
   confirmPendingEncounter: () => DetectedEncounter | null;
   dismissReval: () => void;
   dismissBriefing: () => void;
   clearRobinQuery: () => void;
+  clearRobinActivated: () => void;
 }
 
 // Words to accumulate before running encounter detection
@@ -117,6 +122,7 @@ function extractWakeCommand(transcript: string): string | null {
 export function useShiftAmbient(): UseShiftAmbientReturn {
   const [isListening, setIsListening] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
+  const [isPausedForRobin, setIsPausedForRobin] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [currentTranscript, setCurrentTranscript] = useState("");
   const [pendingEncounter, setPendingEncounter] =
@@ -124,6 +130,8 @@ export function useShiftAmbient(): UseShiftAmbientReturn {
   const [pendingReval, setPendingReval] = useState<RevalCommand | null>(null);
   const [pendingBriefing, setPendingBriefing] = useState<PatientBriefing | null>(null);
   const [pendingRobinQuery, setPendingRobinQuery] = useState<string | null>(null);
+  const [robinActivated, setRobinActivated] = useState(false);
+  const isPausedRef = useRef(false);
 
   const { request: requestWakeLock, release: releaseWakeLock } = useWakeLock();
 
@@ -178,13 +186,17 @@ export function useShiftAmbient(): UseShiftAmbientReturn {
         // Robin wake word — classify and route immediately
         const wakeCommand = extractWakeCommand(transcript);
         if (wakeCommand) {
+          const wordCount = wakeCommand.trim().split(/\s+/).length;
           if (isPatientBriefing(wakeCommand)) {
             setPendingBriefing({ raw: wakeCommand, detectedAt: Date.now() });
           } else if (isRevalCommand(wakeCommand)) {
             setPendingReval({ raw: wakeCommand, detectedAt: Date.now() });
-          } else {
-            // General query — send straight to Robin chat
+          } else if (wordCount >= 4) {
+            // Full command — send straight to Robin chat
             setPendingRobinQuery(wakeCommand);
+          } else {
+            // Short/no follow-up — open chat and activate voice mic
+            setRobinActivated(true);
           }
           return;
         }
@@ -363,6 +375,41 @@ export function useShiftAmbient(): UseShiftAmbientReturn {
     setPendingRobinQuery(null);
   }, []);
 
+  const clearRobinActivated = useCallback(() => {
+    setRobinActivated(false);
+  }, []);
+
+  // Pause ambient — release mic so Robin chat can take over
+  const pauseForRobin = useCallback(() => {
+    if (!isListeningRef.current || isPausedRef.current) return;
+    isPausedRef.current = true;
+    setIsPausedForRobin(true);
+    // Tear down audio processing and WebSocket but remember we're still "listening"
+    if (keepaliveRef.current) { clearInterval(keepaliveRef.current); keepaliveRef.current = null; }
+    if (processorRef.current) { processorRef.current.disconnect(); processorRef.current = null; }
+    if (contextRef.current) {
+      (contextRef.current as AudioContext & { _cleanup?: () => void })._cleanup?.();
+      contextRef.current.close(); contextRef.current = null;
+    }
+    if (streamRef.current) { streamRef.current.getTracks().forEach((t) => t.stop()); streamRef.current = null; }
+    if (wsRef.current) {
+      if (wsRef.current.readyState === WebSocket.OPEN) wsRef.current.send(JSON.stringify({ type: "CloseStream" }));
+      wsRef.current.close(); wsRef.current = null;
+    }
+    setIsConnected(false);
+  }, []);
+
+  // Resume ambient — restart after Robin chat finishes
+  const resumeFromRobin = useCallback(() => {
+    if (!isPausedRef.current) return;
+    isPausedRef.current = false;
+    setIsPausedForRobin(false);
+    if (isListeningRef.current) {
+      // Brief delay so the mic stream from chat fully releases first
+      setTimeout(() => startListening(), 600);
+    }
+  }, [startListening]);
+
   useEffect(() => {
     return () => {
       isListeningRef.current = false;
@@ -373,18 +420,23 @@ export function useShiftAmbient(): UseShiftAmbientReturn {
   return {
     isListening,
     isConnected,
+    isPausedForRobin,
     error,
     currentTranscript,
     pendingEncounter,
     pendingReval,
     pendingBriefing,
     pendingRobinQuery,
+    robinActivated,
     startListening,
     stopListening,
+    pauseForRobin,
+    resumeFromRobin,
     dismissPendingEncounter,
     confirmPendingEncounter,
     dismissReval,
     dismissBriefing,
     clearRobinQuery,
+    clearRobinActivated,
   };
 }
