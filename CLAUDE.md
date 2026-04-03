@@ -24,7 +24,7 @@ E&M billing reconciliation, mid-shift audits, and post-discharge voice callbacks
 | Auth | Supabase GitHub OAuth | `/src/app/auth/callback/route.ts` |
 | ASR | Deepgram | `nova-2-medical` model, WebSocket streaming, diarization enabled |
 | LLM | Claude via Anthropic API | `claude-sonnet-4-20250514` throughout |
-| Agentic loop | Claude tool-use via `/api/robin-think` | POST today, SSE planned |
+| Agentic loop | Claude tool-use via `/api/robin-think` | SSE streaming, 5-tool MDM pipeline |
 | Voice callbacks | Twilio + ElevenLabs or Deepgram TTS | Designed, not yet built |
 
 ---
@@ -78,7 +78,7 @@ E&M billing reconciliation, mid-shift audits, and post-discharge voice callbacks
 /src
   /app
     /api
-      /robin-think/route.ts       ← Agentic MDM audit loop (tool-use, POST)
+      /robin-think/route.ts       ← MDM audit engine (SSE, 5-tool pipeline, AMA 2021 scoring)
       /robin-chat/route.ts        ← Conversational Robin (streaming, auth-gated)
       /generate-note/route.ts     ← ED H&P note generation
       /detect-encounter/route.ts  ← Encounter boundary detection from ambient buffer
@@ -111,7 +111,8 @@ E&M billing reconciliation, mid-shift audits, and post-discharge voice callbacks
     deepgram.ts                   ← WebSocket factory, config, types
     robinPersona.ts               ← ROBIN_IDENTITY + buildRobinContext()
     robinSystemPrompt.ts          ← System prompt for note generation
-    robinTypes.ts                 ← RobinInsight type
+    robinTypes.ts                 ← RobinInsight type + MDM types (MDMScaffold, HPICompleteness, MDMComplexity)
+    mdmScoring.ts                 ← Pure MDM scoring functions: deriveOverallMDM, getNextCode, RVU_MAP
     /supabase
       client.ts                   ← Browser Supabase client
       server.ts                   ← Server Supabase client
@@ -183,22 +184,21 @@ E&M billing reconciliation, mid-shift audits, and post-discharge voice callbacks
 | Physician profile | `physicians.robin_preferences` jsonb | `buildRobinContext()` → robin-chat |
 | Clinical KB | `robinSystemPrompt.ts` (static) | `generate-note`, `robin-think` |
 
-**Current gap:** `robin-think` does NOT receive shift memory or physician profile. It only gets `transcript`, `chiefComplaint`, `disposition`. This is the primary architecture gap to fix.
+**Gap resolved:** `robin-think` now calls `buildRobinContext()` and receives full shift memory + physician profile alongside `transcript`, `chiefComplaint`, `disposition`, `encounterId`, and `shiftId`.
 
 ---
 
 ## API Routes — Current Status
 
-### `/api/robin-think` (POST) — ⚠️ PARTIAL
-The MDM audit agentic loop. Functional but incomplete.
+### `/api/robin-think` (SSE POST) — ✅ COMPLETE
+Full MDM audit engine. Streams events as they fire.
 
-**Current tools:** `note_gap`, `em_assessment`, `ready`
-**Working:** Flags 2–3 documentation gaps, estimates E&M code, iterates up to 8 rounds
-**Missing:**
-- SSE streaming (currently blocking POST — insights can't appear progressively)
-- MDM scaffold engine (the product moat — see spec below)
-- Shift memory context (isolated from `buildRobinContext`)
-- AMA 2021 MDM decision logic (complexity of problems, data reviewed, risk)
+**Tools (in order):** `hpi_completeness` → `mdm_complexity_assessment` → `note_gap` (0–4×) → `em_assessment` → `ready`
+**SSE events:** `hpi_completeness` | `mdm_scaffold` | `note_gap` | `em_assessment` | `ready` | `done` | `error`
+**AMA 2021:** Server-side `deriveOverallMDM()` validates model's MDM scoring (2-of-3 rule, cannot be overridden)
+**Context:** Full shift memory + physician profile via `buildRobinContext()`
+**Persists:** `encounters.mdm_data` written on `ready`
+**Body:** `{ transcript, chiefComplaint, disposition?, encounterId, shiftId }`
 
 ### `/api/robin-chat` (streaming POST) — ✅ COMPLETE
 Conversational Robin. Auth-gated. Streams Claude. Uses `buildRobinContext()` for full shift awareness. Last 20 history messages included.
@@ -363,8 +363,8 @@ Six agents defined in `/docs/agent-roster.md`. OpenClaw bots not yet created.
 
 ## Build Priority Queue
 
-1. **MDM scaffold engine** — new tools in `robin-think`, AMA 2021 logic, shift memory injection
-2. **SSE migration** for `robin-think` — progressive insight streaming
+1. ~~**MDM scaffold engine**~~ ✅ Done — 5-tool SSE pipeline, AMA 2021 scoring, shift memory
+2. ~~**SSE migration** for `robin-think`~~ ✅ Done — streams each event as it fires
 3. **AudioWorklet migration** — replace deprecated `ScriptProcessorNode`
 4. ~~**Deepgram proxy**~~ ✅ Done — key is server-side via `/api/deepgram-token`
 5. **Post-encounter note review screen** — Note/MDM/Billing tabs, E&M badge, copy to EHR
