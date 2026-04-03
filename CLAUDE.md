@@ -17,7 +17,9 @@ E&M billing reconciliation, mid-shift audits, and post-discharge voice callbacks
 
 | Layer | Technology | Notes |
 |---|---|---|
-| Frontend / PWA | Next.js | Deployed on Fly.io (robin-copilot.fly.dev), auto-deploy on push to main |
+| Frontend / PWA | Next.js | `output: 'standalone'` required for Docker |
+| Deployment | Fly.io | App: `robin-copilot`, region: `dfw` (Dallas), 512mb/shared CPU |
+| CI/CD | GitHub Actions | `.github/workflows/deploy.yml` — auto-deploy on push to main |
 | Database | Supabase | `robin-health` org, `robin-dev` project, RLS enabled from day one |
 | Auth | Supabase GitHub OAuth | `/src/app/auth/callback/route.ts` |
 | ASR | Deepgram | `nova-2-medical` model, WebSocket streaming, diarization enabled |
@@ -52,6 +54,21 @@ E&M billing reconciliation, mid-shift audits, and post-discharge voice callbacks
 **Nav icon:** Raccoon eye mask SVG — angular cutouts, wings narrow at bridge, flare outward. No eyeballs, no pupils, no strings.
 
 **Product rule:** RVUs only mid-shift. Dollar amounts appear only in end-of-shift reconciliation.
+
+---
+
+## Fly.io Deployment
+
+**Why Fly.io over Vercel:** HIPAA-eligible BAAs available at reasonable cost; Vercel's BAA pricing was prohibitive.
+
+**Key files:**
+- `fly.toml` — app config (`robin-copilot`, Dallas `dfw`, 512mb/1 shared CPU)
+- `Dockerfile` — multi-stage Node.js 22 Alpine build, copies `.next/standalone`
+- `.dockerignore` — excludes node_modules, .next, .env files
+- `.nvmrc` — Node 22
+- `.github/workflows/deploy.yml` — GitHub Actions: auto-deploy to Fly on push to main
+
+**SSE note:** Fly.io has no streaming timeout constraints (unlike Vercel's edge 10s limit). `robin-think` SSE migration is a standard Node.js `ReadableStream` — same pattern as `robin-chat`.
 
 ---
 
@@ -206,6 +223,12 @@ Parses patient briefing commands from ambient audio.
 **Issue:** `createScriptProcessor(4096, 1, 1)` is deprecated in all major browsers. Works today but is a ticking clock.
 **Fix:** Migrate to `AudioWorkletNode`. Requires a separate worklet file registered via `audioContext.audioWorklet.addModule()`.
 **Priority:** Medium — before launch, not before MVP.
+
+### TD-003 — Fly.io auto_stop_machines = "stop" ⚠️
+**File:** `fly.toml`
+**Issue:** `auto_stop_machines = "stop"` can cause cold starts of several seconds mid-shift. For a physician using Robin during an active shift, a cold start is unacceptable.
+**Fix:** Change to `auto_stop_machines = "suspend"` — resumes in ~150ms vs. full cold start.
+**Priority:** Low for now (min_machines_running = 1 keeps one warm), revisit before multi-physician use.
 
 ### TD-002 — Deepgram API key is client-side ⚠️
 **File:** `useDeepgram.ts`, `useShiftAmbient.ts` — both use `process.env.NEXT_PUBLIC_DEEPGRAM_API_KEY`
