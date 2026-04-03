@@ -226,10 +226,19 @@ export function useShiftAmbient(): UseShiftAmbientReturn {
     [pendingEncounter, runDetection]
   );
 
+  const fetchDeepgramToken = async (): Promise<string> => {
+    const res = await fetch("/api/deepgram-token");
+    if (!res.ok) throw new Error("Failed to get Deepgram token");
+    const { accessToken } = await res.json();
+    return accessToken;
+  };
+
   const startListening = useCallback(async () => {
-    const apiKey = process.env.NEXT_PUBLIC_DEEPGRAM_API_KEY;
-    if (!apiKey) {
-      setError("Deepgram API key not configured");
+    let accessToken: string;
+    try {
+      accessToken = await fetchDeepgramToken();
+    } catch {
+      setError("Failed to get Deepgram token");
       return;
     }
 
@@ -246,7 +255,7 @@ export function useShiftAmbient(): UseShiftAmbientReturn {
       streamRef.current = stream;
 
       const ws = createDeepgramSocket(
-        { apiKey },
+        { accessToken },
         (data) => {
           const transcript = data.channel?.alternatives[0]?.transcript || "";
           handleTranscript(transcript, data.is_final ?? false);

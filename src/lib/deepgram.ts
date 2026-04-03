@@ -1,7 +1,7 @@
 const DEEPGRAM_WS_URL = "wss://api.deepgram.com/v1/listen";
 
 export interface DeepgramConfig {
-  apiKey: string;
+  accessToken: string;
   model?: string;
   language?: string;
   smartFormat?: boolean;
@@ -58,8 +58,8 @@ export function createDeepgramSocket(
   });
 
   const ws = new WebSocket(`${DEEPGRAM_WS_URL}?${params}`, [
-    "token",
-    config.apiKey,
+    "bearer",
+    config.accessToken,
   ]);
 
   ws.onmessage = (event) => {

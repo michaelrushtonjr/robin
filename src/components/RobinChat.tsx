@@ -272,19 +272,25 @@ export default function RobinChat({ shiftId, encounterId, pendingRobinQuery, onR
 
   const startVoice = useCallback(async () => {
     if (isVoiceListening) { stopVoice(); return; }
-    const apiKey = process.env.NEXT_PUBLIC_DEEPGRAM_API_KEY;
-    if (!apiKey) return;
     // Pause ambient before grabbing mic
     onVoiceStart?.();
     // Brief pause to let the ambient stream fully release the mic on iOS
     await new Promise((r) => setTimeout(r, 400));
+    let accessToken: string;
+    try {
+      const tokenRes = await fetch("/api/deepgram-token");
+      if (!tokenRes.ok) return;
+      ({ accessToken } = await tokenRes.json());
+    } catch {
+      return;
+    }
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: { channelCount: 1, sampleRate: 16000, echoCancellation: true } });
       voiceStreamRef.current = stream;
       setIsVoiceListening(true);
 
       const ws = createDeepgramSocket(
-        { apiKey, interimResults: true, utteranceEndMs: 1000 },
+        { accessToken, interimResults: true, utteranceEndMs: 1000 },
         (data) => {
           const t = data.channel?.alternatives[0]?.transcript || "";
           if (!t) return;

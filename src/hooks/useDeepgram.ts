@@ -51,15 +51,24 @@ export function useDeepgram(): UseDeepgramReturn {
       return acc ? `${acc}\n${label} ${seg.text}` : `${label} ${seg.text}`;
     }, "");
 
-  const connect = useCallback((stream: MediaStream) => {
-    const apiKey = process.env.NEXT_PUBLIC_DEEPGRAM_API_KEY;
-    if (!apiKey) {
-      setError("Deepgram API key not configured");
+  const fetchDeepgramToken = async (): Promise<string> => {
+    const res = await fetch("/api/deepgram-token");
+    if (!res.ok) throw new Error("Failed to get Deepgram token");
+    const { accessToken } = await res.json();
+    return accessToken;
+  };
+
+  const connect = useCallback(async (stream: MediaStream) => {
+    let accessToken: string;
+    try {
+      accessToken = await fetchDeepgramToken();
+    } catch {
+      setError("Failed to get Deepgram token");
       return;
     }
 
     const ws = createDeepgramSocket(
-      { apiKey },
+      { accessToken },
       (data: DeepgramMessage) => {
         const transcript =
           data.channel?.alternatives[0]?.transcript || "";

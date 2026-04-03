@@ -230,11 +230,10 @@ Parses patient briefing commands from ambient audio.
 **Fix:** Change to `auto_stop_machines = "suspend"` — resumes in ~150ms vs. full cold start.
 **Priority:** Low for now (min_machines_running = 1 keeps one warm), revisit before multi-physician use.
 
-### TD-002 — Deepgram API key is client-side ⚠️
-**File:** `useDeepgram.ts`, `useShiftAmbient.ts` — both use `process.env.NEXT_PUBLIC_DEEPGRAM_API_KEY`
-**Issue:** Key ships in browser bundle. Verify if `src/proxy.ts` proxies this server-side.
-**Fix:** Route all Deepgram WebSocket traffic through a Next.js API route proxy before real PHI.
-**Priority:** HIGH — required before any real patient data.
+### TD-002 — Deepgram API key is client-side ✅ RESOLVED
+**Fix applied:** `/api/deepgram-token` route generates a 30-second JWT server-side using `DEEPGRAM_API_KEY`.
+Client fetches the token before each WebSocket connection; uses `["bearer", token]` subprotocol.
+Master API key is now server-side only. Token expires in 30s and carries `usage:write` scope only.
 
 ---
 

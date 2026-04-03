@@ -74,8 +74,14 @@ export default function ClarificationPanel({
       return;
     }
 
-    const apiKey = process.env.NEXT_PUBLIC_DEEPGRAM_API_KEY;
-    if (!apiKey) return;
+    let accessToken: string;
+    try {
+      const tokenRes = await fetch("/api/deepgram-token");
+      if (!tokenRes.ok) return;
+      ({ accessToken } = await tokenRes.json());
+    } catch {
+      return;
+    }
 
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
@@ -85,7 +91,7 @@ export default function ClarificationPanel({
       setListeningIndex(index);
 
       const ws = createDeepgramSocket(
-        { apiKey, interimResults: true, utteranceEndMs: 1200 },
+        { accessToken, interimResults: true, utteranceEndMs: 1200 },
         (data) => {
           const transcript = data.channel?.alternatives[0]?.transcript || "";
           if (!transcript) return;
