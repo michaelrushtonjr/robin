@@ -14,6 +14,8 @@ const spaceMono = Space_Mono({
   weight: ["400", "700"],
 });
 
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: "Robin — Your On-Shift Sidekick",
   description: "Your on-shift sidekick for emergency medicine",
