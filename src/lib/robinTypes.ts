@@ -1,13 +1,50 @@
 export interface RobinInsight {
-  type: "gap" | "em" | "ready";
-  // gap
+  type: "gap" | "em" | "ready" | "mdm_scaffold" | "hpi_completeness";
+  // gap (legacy fields preserved for backward compat)
   section?: string;
   issue?: string;
   severity?: "high" | "medium";
-  // em
+  // em (legacy)
   emCode?: string;
   mdmComplexity?: string;
   limitingFactor?: string;
-  // ready
+  // ready (legacy)
   noteQuality?: "good" | "needs_work";
+}
+
+// ─── MDM Scaffold types ───────────────────────────────────────────────────────
+
+export type MDMComplexity = "straightforward" | "low" | "moderate" | "high";
+
+export type HPIElement =
+  | "location"
+  | "quality"
+  | "severity"
+  | "duration"
+  | "timing"
+  | "context"
+  | "modifying_factors"
+  | "associated_signs_and_symptoms";
+
+export interface MDMElementScore {
+  complexity: MDMComplexity;
+  rationale: string;
+}
+
+export interface MDMScaffold {
+  problems: MDMElementScore;
+  data: MDMElementScore;
+  risk: MDMElementScore;
+  overall_mdm: MDMComplexity;
+  supported_code: string;
+  next_code: string | null;
+  one_thing_to_upgrade: string | null;
+  scored_at: string;
+}
+
+export interface HPICompleteness {
+  present: HPIElement[];
+  missing: HPIElement[];
+  score: number;
+  brief_or_extended: "brief" | "extended";
 }
