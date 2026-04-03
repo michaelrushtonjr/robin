@@ -17,7 +17,7 @@ E&M billing reconciliation, mid-shift audits, and post-discharge voice callbacks
 
 | Layer | Technology | Notes |
 |---|---|---|
-| Frontend / PWA | Next.js | Deployed on Vercel, auto-deploy on push |
+| Frontend / PWA | Next.js | Deployed on Fly.io (robin-copilot.fly.dev), auto-deploy on push to main |
 | Database | Supabase | `robin-health` org, `robin-dev` project, RLS enabled from day one |
 | Auth | Supabase GitHub OAuth | `/src/app/auth/callback/route.ts` |
 | ASR | Deepgram | `nova-2-medical` model, WebSocket streaming, diarization enabled |
