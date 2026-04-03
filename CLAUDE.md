@@ -114,7 +114,7 @@ E&M billing reconciliation, mid-shift audits, and post-discharge voice callbacks
     /supabase
       client.ts                   ← Browser Supabase client
       server.ts                   ← Server Supabase client
-  proxy.ts                        ← (Review: may be Deepgram proxy — verify)
+  proxy.ts                        ← Supabase auth middleware — session refresh + /shift route protection. Not a Deepgram proxy.
 /supabase/migrations
   001_initial_schema.sql          ← physicians, shifts, encounters + RLS
   002_encounter_demographics.sql  ← age, gender columns
