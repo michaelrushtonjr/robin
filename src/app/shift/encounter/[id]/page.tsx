@@ -18,7 +18,7 @@ import ModeToggle from "@/components/capture/ModeToggle";
 import ControlBar from "@/components/capture/ControlBar";
 import RobinObservation from "@/components/capture/RobinObservation";
 import type { TranscriptSegment } from "@/components/TranscriptPanel";
-import type { RobinInsight } from "@/lib/robinTypes";
+import type { RobinAuditState } from "@/lib/robinTypes";
 import type { TranscriptLineData } from "@/components/capture/TranscriptLine";
 
 interface Encounter {
@@ -70,8 +70,10 @@ export default function EncounterPage({
   const [clarificationState, setClarificationState] = useState<ClarificationState>("idle");
   const [clarificationQuestions, setClarificationQuestions] = useState<ClarificationQuestion[]>([]);
   const [clarificationAnswers, setClarificationAnswers] = useState<ClarificationAnswer[]>([]);
-  const [robinInsights, setRobinInsights] = useState<RobinInsight[]>([]);
-  const [robinLoading, setRobinLoading] = useState(false);
+  const [robinAudit, setRobinAudit] = useState<RobinAuditState>({
+    gaps: [],
+    loading: false,
+  });
   const [revalAppended, setRevalAppended] = useState(false);
 
   // ── Capture UI state ────────────────────────────────────────────────────
@@ -181,8 +183,73 @@ export default function EncounterPage({
     setDisposition(dispo);
     setPhase("documenting");
     setClarificationState("loading");
-    setRobinLoading(true);
-    setRobinInsights([]);
+
+    // Fire robin-think SSE — runs concurrently, does not block clarification fetch
+    setRobinAudit({ gaps: [], loading: true });
+    (async () => {
+      try {
+        const res = await fetch("/api/robin-think", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            transcript: labeledTranscript,
+            chiefComplaint: encounter?.chief_complaint,
+            disposition: dispo,
+            encounterId: id,
+            shiftId: encounter?.shift_id,
+          }),
+        });
+
+        if (!res.ok || !res.body) {
+          setRobinAudit((prev) => ({ ...prev, loading: false }));
+          return;
+        }
+
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = "";
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split("\n");
+          buffer = lines.pop() ?? "";
+
+          let eventName = "";
+          for (const line of lines) {
+            if (line.startsWith("event: ")) {
+              eventName = line.slice(7).trim();
+            } else if (line.startsWith("data: ") && eventName) {
+              try {
+                const data = JSON.parse(line.slice(6));
+                if (eventName === "hpi_completeness") {
+                  setRobinAudit((prev) => ({ ...prev, hpi: data }));
+                } else if (eventName === "mdm_scaffold") {
+                  setRobinAudit((prev) => ({ ...prev, mdm: data }));
+                } else if (eventName === "note_gap") {
+                  setRobinAudit((prev) => ({
+                    ...prev,
+                    gaps: [...prev.gaps, data],
+                  }));
+                } else if (eventName === "em_assessment") {
+                  setRobinAudit((prev) => ({ ...prev, em: data }));
+                } else if (eventName === "ready") {
+                  setRobinAudit((prev) => ({
+                    ...prev,
+                    summary: data.summary,
+                    loading: false,
+                  }));
+                }
+              } catch {}
+              eventName = "";
+            }
+          }
+        }
+      } catch {
+        setRobinAudit((prev) => ({ ...prev, loading: false }));
+      }
+    })();
 
     const withTimeout = (p: Promise<Response>, ms: number) =>
       Promise.race([
@@ -192,7 +259,7 @@ export default function EncounterPage({
         ),
       ]);
 
-    const [clarRes, robinRes] = await Promise.allSettled([
+    const [clarRes] = await Promise.allSettled([
       withTimeout(
         fetch("/api/clarification-questions", {
           method: "POST",
@@ -205,25 +272,7 @@ export default function EncounterPage({
         }),
         25000
       ),
-      withTimeout(
-        fetch("/api/robin-think", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            transcript: labeledTranscript,
-            chiefComplaint: encounter?.chief_complaint,
-            disposition: dispo,
-          }),
-        }),
-        30000
-      ),
     ]);
-
-    if (robinRes.status === "fulfilled" && robinRes.value.ok) {
-      const robinData = await robinRes.value.json();
-      setRobinInsights(robinData.insights || []);
-    }
-    setRobinLoading(false);
 
     if (clarRes.status === "fulfilled" && clarRes.value.ok) {
       try {
@@ -463,14 +512,14 @@ export default function EncounterPage({
 
             {/* ── Robin observations ────────────────────────────────────── */}
             <AnimatePresence>
-              {robinInsights
-                .filter((i) => i.type === "gap")
+              {robinAudit.gaps
+                .filter((g) => g.severity === "high")
                 .slice(0, 2)
-                .map((obs, idx) => (
+                .map((gap, idx) => (
                   <RobinObservation
                     key={idx}
                     type="mdm_flag"
-                    message={obs.issue || ""}
+                    message={gap.description}
                   />
                 ))}
             </AnimatePresence>
@@ -519,9 +568,10 @@ export default function EncounterPage({
               </div>
 
               {/* Robin insights */}
-              {(robinLoading || robinInsights.length > 0) && (
+              {(robinAudit.loading || robinAudit.gaps.length > 0 ||
+                robinAudit.mdm || robinAudit.hpi || robinAudit.em) && (
                 <div className="mb-3">
-                  <RobinInsightsPanel insights={robinInsights} loading={robinLoading} />
+                  <RobinInsightsPanel audit={robinAudit} />
                 </div>
               )}
 

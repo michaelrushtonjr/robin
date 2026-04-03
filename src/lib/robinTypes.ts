@@ -48,3 +48,26 @@ export interface HPICompleteness {
   score: number;
   brief_or_extended: "brief" | "extended";
 }
+
+// ─── Robin Audit state (consumed by RobinInsightsPanel) ──────────────────────
+
+export interface RobinAuditState {
+  hpi?: HPICompleteness;
+  mdm?: MDMScaffold;
+  gaps: Array<{
+    gap_type: string;
+    description: string;
+    severity: string;
+    suggested_fix: string;
+  }>;
+  em?: {
+    code: string;
+    rvu: number;
+    mdm_level: string;
+    rationale: string;
+    upgrade_possible: boolean;
+    upgrade_requires: string | null;
+  };
+  summary?: string;
+  loading: boolean;
+}

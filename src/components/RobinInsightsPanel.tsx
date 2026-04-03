@@ -1,103 +1,294 @@
 "use client";
 
-import type { RobinInsight } from "@/lib/robinTypes";
+import type { RobinAuditState } from "@/lib/robinTypes";
 
 interface Props {
-  insights: RobinInsight[];
-  loading: boolean;
+  audit: RobinAuditState;
 }
 
-export default function RobinInsightsPanel({ insights, loading }: Props) {
-  const gaps = insights.filter((i) => i.type === "gap");
-  const emInsight = insights.find((i) => i.type === "em");
-  const ready = insights.find((i) => i.type === "ready");
+const COMPLEXITY_COLORS: Record<string, { bg: string; text: string }> = {
+  high: { bg: "var(--robin)", text: "#fff" },
+  moderate: { bg: "var(--amber)", text: "#fff" },
+  low: { bg: "var(--teal)", text: "#fff" },
+  straightforward: { bg: "var(--surface2)", text: "var(--muted)" },
+};
 
-  const highGaps = gaps.filter((g) => g.severity === "high");
-  const medGaps = gaps.filter((g) => g.severity === "medium");
+const SEVERITY_COLORS: Record<string, string> = {
+  high: "var(--robin)",
+  medium: "var(--amber)",
+  low: "var(--muted)",
+};
+
+function ComplexityBadge({ level }: { level: string }) {
+  const colors = COMPLEXITY_COLORS[level] ?? COMPLEXITY_COLORS.straightforward;
+  return (
+    <span
+      className="inline-block rounded-full px-2 py-0.5 text-[10px] font-bold font-space-mono uppercase"
+      style={{ backgroundColor: colors.bg, color: colors.text }}
+    >
+      {level}
+    </span>
+  );
+}
+
+export default function RobinInsightsPanel({ audit }: Props) {
+  const { hpi, mdm, gaps, em, summary, loading } = audit;
+  const hasData = hpi || mdm || gaps.length > 0 || em;
 
   return (
-    <div className="rounded-lg border border-indigo-200 bg-indigo-50 p-4">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-2">
-          <span className="text-sm font-semibold text-indigo-900">Robin</span>
-          {loading && (
-            <span className="text-xs text-indigo-400 animate-pulse">
-              reviewing documentation…
+    <div
+      className="rounded-[14px] border p-4 flex flex-col gap-3"
+      style={{
+        backgroundColor: "var(--surface)",
+        borderColor: "var(--border)",
+      }}
+    >
+      {/* ── Header ──────────────────────────────────────────────────────── */}
+      <div className="flex items-center gap-2">
+        <span
+          className="text-sm font-bold font-syne"
+          style={{ color: "var(--robin)" }}
+        >
+          Robin
+        </span>
+        {loading && !summary && (
+          <span className="flex items-center gap-1.5">
+            <span
+              className="inline-block h-1.5 w-1.5 rounded-full animate-pulse"
+              style={{ backgroundColor: "var(--robin)" }}
+            />
+            <span
+              className="text-xs font-space-mono"
+              style={{ color: "var(--muted)" }}
+            >
+              reviewing…
             </span>
-          )}
-        </div>
-        {!loading && ready && (
+          </span>
+        )}
+        {summary && (
           <span
-            className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-              ready.noteQuality === "good"
-                ? "bg-green-100 text-green-700 border border-green-200"
-                : "bg-yellow-100 text-yellow-700 border border-yellow-200"
-            }`}
+            className="text-xs font-space-mono"
+            style={{ color: "var(--muted)" }}
           >
-            {ready.noteQuality === "good" ? "Note looks good" : "Gaps to address"}
+            {summary}
           </span>
         )}
       </div>
 
-      {/* Loading skeleton */}
-      {loading && (
-        <div className="space-y-2">
-          <div className="h-3 bg-indigo-100 rounded animate-pulse w-3/4" />
-          <div className="h-3 bg-indigo-100 rounded animate-pulse w-1/2" />
+      {/* ── Loading skeleton ────────────────────────────────────────────── */}
+      {loading && !hasData && (
+        <div className="flex flex-col gap-2">
+          <div
+            className="h-3 rounded w-3/4 animate-pulse"
+            style={{ backgroundColor: "var(--surface2)" }}
+          />
+          <div
+            className="h-3 rounded w-1/2 animate-pulse"
+            style={{ backgroundColor: "var(--surface2)" }}
+          />
         </div>
       )}
 
-      {/* No gaps */}
-      {!loading && gaps.length === 0 && (
-        <p className="text-sm text-indigo-700">
-          I didn&apos;t find any documentation gaps. Ready to generate.
-        </p>
-      )}
-
-      {/* High severity gaps */}
-      {!loading && highGaps.length > 0 && (
-        <div className="space-y-2 mb-3">
-          {highGaps.map((gap, i) => (
-            <div key={i} className="flex items-start gap-2">
-              <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-red-400 shrink-0" />
-              <p className="text-sm text-indigo-800">
-                <span className="font-semibold">{gap.section}: </span>
-                {gap.issue}
-              </p>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Medium severity gaps */}
-      {!loading && medGaps.length > 0 && (
-        <div className="space-y-2 mb-3">
-          {medGaps.map((gap, i) => (
-            <div key={i} className="flex items-start gap-2">
-              <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-yellow-400 shrink-0" />
-              <p className="text-sm text-indigo-700">
-                <span className="font-semibold">{gap.section}: </span>
-                {gap.issue}
-              </p>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* E&M assessment */}
-      {!loading && emInsight && (
-        <div className="mt-2 rounded-md bg-white border border-indigo-100 px-3 py-2">
-          <p className="text-xs font-semibold text-indigo-800">
-            E&M estimate: {emInsight.emCode}{" "}
-            <span className="font-normal text-indigo-600">
-              ({emInsight.mdmComplexity} MDM)
+      {/* ── HPI Card ────────────────────────────────────────────────────── */}
+      {hpi && (
+        <div
+          className="rounded-[10px] border px-3 py-2.5"
+          style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)" }}
+        >
+          <div className="flex items-center justify-between mb-1.5">
+            <span
+              className="text-xs font-bold font-syne uppercase tracking-wider"
+              style={{ color: "var(--text)" }}
+            >
+              HPI
             </span>
+            <div className="flex items-center gap-2">
+              <span
+                className="text-xs font-bold font-space-mono"
+                style={{ color: "var(--text)" }}
+              >
+                {hpi.score}/8
+              </span>
+              <span
+                className="inline-block rounded-full px-2 py-0.5 text-[10px] font-bold font-space-mono"
+                style={{
+                  backgroundColor:
+                    hpi.brief_or_extended === "brief"
+                      ? "var(--amber-dim)"
+                      : "var(--teal-dim)",
+                  color:
+                    hpi.brief_or_extended === "brief"
+                      ? "var(--amber)"
+                      : "var(--teal)",
+                }}
+              >
+                {hpi.brief_or_extended === "brief" ? "Brief HPI" : "Extended"}
+              </span>
+            </div>
+          </div>
+          {hpi.missing.length > 0 && (
+            <div className="flex flex-wrap gap-1 mt-1">
+              {hpi.missing.map((el) => (
+                <span
+                  key={el}
+                  className="text-[10px] font-space-mono px-1.5 py-0.5 rounded"
+                  style={{
+                    backgroundColor: "var(--surface2)",
+                    color: "var(--muted)",
+                  }}
+                >
+                  {el.replace(/_/g, " ")}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── MDM Card ────────────────────────────────────────────────────── */}
+      {mdm && (
+        <div
+          className="rounded-[10px] border px-3 py-2.5"
+          style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)" }}
+        >
+          <div className="flex flex-col gap-2">
+            {(["problems", "data", "risk"] as const).map((element) => (
+              <div key={element} className="flex items-start justify-between gap-2">
+                <div className="flex-1">
+                  <span
+                    className="text-xs font-bold font-syne capitalize"
+                    style={{ color: "var(--text)" }}
+                  >
+                    {element}
+                  </span>
+                  <p
+                    className="text-[10px] mt-0.5"
+                    style={{ color: "var(--muted)" }}
+                  >
+                    {mdm[element].rationale}
+                  </p>
+                </div>
+                <ComplexityBadge level={mdm[element].complexity} />
+              </div>
+            ))}
+          </div>
+
+          <div
+            className="my-2 h-px"
+            style={{ backgroundColor: "var(--border)" }}
+          />
+
+          <div className="flex items-center justify-between">
+            <span
+              className="text-xs font-bold font-space-mono"
+              style={{ color: "var(--text)" }}
+            >
+              Supported code: {mdm.supported_code}
+            </span>
+            {em && (
+              <span
+                className="text-xs font-space-mono"
+                style={{ color: "var(--muted)" }}
+              >
+                RVU: {em.rvu}
+              </span>
+            )}
+          </div>
+
+          {mdm.next_code && mdm.one_thing_to_upgrade && (
+            <div
+              className="mt-2 rounded-lg px-3 py-2"
+              style={{ backgroundColor: "var(--amber-dim)" }}
+            >
+              <p
+                className="text-xs font-syne"
+                style={{ color: "var(--text)" }}
+              >
+                {mdm.one_thing_to_upgrade}
+              </p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── Gaps ────────────────────────────────────────────────────────── */}
+      {gaps.map((gap, i) => (
+        <div
+          key={i}
+          className="rounded-[10px] border px-3 py-2.5"
+          style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)" }}
+        >
+          <div className="flex items-start gap-2">
+            <span
+              className="mt-1.5 h-2 w-2 rounded-full shrink-0"
+              style={{
+                backgroundColor: SEVERITY_COLORS[gap.severity] ?? "var(--muted)",
+              }}
+            />
+            <div className="flex-1">
+              <p
+                className="text-xs font-syne"
+                style={{ color: "var(--text)" }}
+              >
+                {gap.description}
+              </p>
+              <p
+                className="text-[10px] mt-1"
+                style={{ color: "var(--muted)" }}
+              >
+                <span className="font-bold">Fix: </span>
+                {gap.suggested_fix}
+              </p>
+              <span
+                className="inline-block mt-1 text-[9px] font-space-mono uppercase tracking-wider"
+                style={{ color: "var(--muted)" }}
+              >
+                {gap.gap_type.replace(/_/g, " ")}
+              </span>
+            </div>
+          </div>
+        </div>
+      ))}
+
+      {/* ── E&M Card ────────────────────────────────────────────────────── */}
+      {em && (
+        <div
+          className="rounded-[10px] border px-3 py-2.5"
+          style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)" }}
+        >
+          <div className="flex items-center justify-between mb-1">
+            <span
+              className="text-sm font-bold font-space-mono"
+              style={{ color: "var(--text)" }}
+            >
+              {em.code} · {em.rvu} RVU
+            </span>
+            <ComplexityBadge level={em.mdm_level} />
+          </div>
+          <p
+            className="text-[10px]"
+            style={{ color: "var(--muted)" }}
+          >
+            {em.rationale}
           </p>
-          {emInsight.limitingFactor && (
-            <p className="text-xs text-indigo-500 mt-0.5">
-              {emInsight.limitingFactor}
-            </p>
+          {em.upgrade_possible && em.upgrade_requires && (
+            <div
+              className="mt-2 flex items-center gap-1.5 rounded-lg px-2.5 py-1.5"
+              style={{ backgroundColor: "var(--teal-dim)" }}
+            >
+              <span
+                className="text-xs font-bold font-space-mono"
+                style={{ color: "var(--teal)" }}
+              >
+                ↑
+              </span>
+              <span
+                className="text-[10px] font-syne"
+                style={{ color: "var(--text)" }}
+              >
+                {em.upgrade_requires}
+              </span>
+            </div>
           )}
         </div>
       )}

@@ -93,7 +93,7 @@ E&M billing reconciliation, mid-shift audits, and post-discharge voice callbacks
     RobinChat.tsx                 ← Conversational Robin panel (19KB — substantial)
     ClarificationPanel.tsx        ← Post-encounter clarification Q&A
     NoteOutput.tsx                ← Generated note display + copy to EHR
-    RobinInsightsPanel.tsx        ← MDM gap + E&M assessment display
+    RobinInsightsPanel.tsx        ← MDM audit panel (SSE-driven, progressive: HPI → MDM → gaps → E&M)
     TranscriptPanel.tsx           ← Full transcript view
     /capture
       ControlBar.tsx              ← Pause / dictate / end controls
@@ -111,7 +111,7 @@ E&M billing reconciliation, mid-shift audits, and post-discharge voice callbacks
     deepgram.ts                   ← WebSocket factory, config, types
     robinPersona.ts               ← ROBIN_IDENTITY + buildRobinContext()
     robinSystemPrompt.ts          ← System prompt for note generation
-    robinTypes.ts                 ← RobinInsight type + MDM types (MDMScaffold, HPICompleteness, MDMComplexity)
+    robinTypes.ts                 ← RobinInsight, RobinAuditState, MDM types (MDMScaffold, HPICompleteness, MDMComplexity)
     mdmScoring.ts                 ← Pure MDM scoring functions: deriveOverallMDM, getNextCode, RVU_MAP
     /supabase
       client.ts                   ← Browser Supabase client
@@ -308,10 +308,8 @@ Pass shift context into `robin-think` by calling `buildRobinContext()` and injec
 
 This allows robin-think to say: "You've been documenting your ROS as 'reviewed and negative' all shift — that's not going to fly on audit."
 
-### SSE Migration
-Convert `robin-think` from blocking POST to SSE so insights stream to the UI progressively.
-Pattern: same as `robin-chat` stream — `ReadableStream` + `text/event-stream` headers.
-UI should render each insight card as it arrives, not wait for the full response.
+### SSE Migration ✅ COMPLETE (API + UI)
+`robin-think` streams SSE events. `encounter/[id]/page.tsx` consumes via `ReadableStream.getReader()` as a concurrent async IIFE (does not block clarification fetch). `RobinInsightsPanel` renders each section progressively as events arrive. State managed via `RobinAuditState` in `robinTypes.ts`.
 
 ---
 
@@ -364,7 +362,7 @@ Six agents defined in `/docs/agent-roster.md`. OpenClaw bots not yet created.
 ## Build Priority Queue
 
 1. ~~**MDM scaffold engine**~~ ✅ Done — 5-tool SSE pipeline, AMA 2021 scoring, shift memory
-2. ~~**SSE migration** for `robin-think`~~ ✅ Done — streams each event as it fires
+2. ~~**SSE migration** for `robin-think`~~ ✅ Done — API streams events; UI consumes via SSE consumer + RobinInsightsPanel rewrite
 3. **AudioWorklet migration** — replace deprecated `ScriptProcessorNode`
 4. ~~**Deepgram proxy**~~ ✅ Done — key is server-side via `/api/deepgram-token`
 5. **Post-encounter note review screen** — Note/MDM/Billing tabs, E&M badge, copy to EHR
