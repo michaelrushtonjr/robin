@@ -84,6 +84,7 @@ E&M billing reconciliation, mid-shift audits, and post-discharge voice callbacks
       /detect-encounter/route.ts  ← Encounter boundary detection from ambient buffer
       /clarification-questions/   ← Post-encounter gap clarification
       /parse-patients/            ← Patient briefing parser
+      /deepgram-token/            ← Auth-gated short-lived Deepgram token (30s JWT, server-side only)
     /shift/page.tsx               ← Shift dashboard
     /shift/encounter/[id]/page.tsx ← Encounter capture screen (primary screen)
     /login/page.tsx
@@ -365,7 +366,7 @@ Six agents defined in `/docs/agent-roster.md`. OpenClaw bots not yet created.
 1. **MDM scaffold engine** — new tools in `robin-think`, AMA 2021 logic, shift memory injection
 2. **SSE migration** for `robin-think` — progressive insight streaming
 3. **AudioWorklet migration** — replace deprecated `ScriptProcessorNode`
-4. **Deepgram proxy** — move key server-side before real PHI
+4. ~~**Deepgram proxy**~~ ✅ Done — key is server-side via `/api/deepgram-token`
 5. **Post-encounter note review screen** — Note/MDM/Billing tabs, E&M badge, copy to EHR
 6. **Robin agent panel** — open items, observations feed, RVU snapshot
 7. **OpenClaw bots** — Wren, Atlas, Ledger, Echo, Sage via Telegram
