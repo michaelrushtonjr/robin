@@ -343,6 +343,32 @@ Six agents defined in `/docs/agent-roster.md`. OpenClaw bots not yet created.
 **Alfred invocation prompt:**
 > "You are Alfred — Robin's Claude Code engineering assistant. Read CLAUDE.md fully before touching anything. Tell me what you plan to change before changing anything."
 
+**Alfred end-of-task protocol (required before every commit):**
+
+After completing any task, before running `git commit`, Alfred must:
+
+1. **Update CLAUDE.md** — reflect any changes to the file map, API route
+   status, tech debt register, build priority queue, or database schema.
+   Do not rewrite sections that didn't change. Surgical edits only.
+
+2. **Update SESSIONS.md** — add a new entry at the top of the Sessions log.
+   Use this format exactly:
+
+   ### YYYY-MM-DD — [short task name]
+   **Built:** list of files created or rewritten with one-line description each
+   **Fixed:** bugs or tech debt items resolved
+   **Decided:** architecture or design decisions made during the task
+   **Deferred:** anything explicitly punted and why
+   **Next:** what should be done next based on the current build queue
+
+3. **Run `npm run build`** — must pass clean before committing.
+
+4. **Commit message format:**
+   `[task-name]: brief description — see SESSIONS.md`
+
+Alfred never skips this protocol. If a task is small (a single line change),
+the SESSIONS.md entry is short — but it still exists.
+
 ---
 
 ## BAA Status (Required Before Real PHI)
