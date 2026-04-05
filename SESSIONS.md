@@ -9,6 +9,33 @@ Keep each entry tight — 5–10 lines max. This is a log, not documentation.
 
 ## Sessions
 
+### 2026-04-05 — Layer 3: Dashboard & Chart Agency
+**Built:**
+- `/src/app/api/agent/act/route.ts` — full rewrite: expanded from 2 to 16 command types (PE, EKG, MDM, ED course, orders, labs, radiology, discharge instructions, final diagnosis w/ ICD-10, consults, encounter update, voice undo, voice remove). Encounter resolution logic (name/room/number/recency fuzzy match). All writes go through living note + robin_actions audit
+- `/src/app/api/agent/undo/route.ts` — restores previous_state from robin_actions; supports note section, encounter field, and encounter deletion undos; redo = undo the undo
+- `/src/app/api/agent/procedure-qa/route.ts` — KB-driven Q&A for 5 procedures (sedation, lac repair, I&D, intubation, splinting); assembles procedure note via Claude on completion
+- `/src/hooks/useShiftAmbient.ts` — state machine (ambient/dictating/qa_session), 15+ voice command pattern matchers, passive consult detection, dictation buffer, endDictation/endQASession callbacks
+- `/src/components/DisambiguationCard.tsx` — "Which encounter?" push-button card
+- `/src/components/BatchPECard.tsx` — multi-patient PE dictation card with done states
+
+**Decided:**
+- All Layer 3 commands route through single `/api/agent/act` gateway — no per-command routes
+- Encounter resolution defaults to most recently created if no match found
+- Passive consult detection runs on every final transcript segment (no wake word)
+- Dictation buffer is separate from ambient transcript buffer (spec requirement: prevents MDM re-analysis)
+- Dual Deepgram connection deferred to WoZ testing — state machine transitions are ready, actual second WebSocket needs real audio validation
+
+**Deferred:**
+- Dual Deepgram dictation connection — framework ready, actual WebSocket open/close needs WoZ
+- Silence timeout tuning (6s proposed) — WoZ before hardcoding
+- Procedure Q&A voice-only vs hybrid — WoZ decision
+- Structured MDM preview card render location — WoZ decision
+
+**Next:**
+- WoZ validation — full pipeline: Voice Memos → transcript → voice commands → note output
+- AudioWorklet migration (TD-001)
+- BAA conversations
+
 ### 2026-04-05 — Note Dashboard: Living Note Architecture
 **Built:**
 - `/src/lib/robinTypes.ts` — added EncounterNote, NoteSection, OrderEntry, EKGEntry, RadiologyEntry, LabResultEntry, ProcedureEntry, EDCourseEntry, ConsultEntry, NoteBadge, computeNoteBadges(), createEmptyNote()

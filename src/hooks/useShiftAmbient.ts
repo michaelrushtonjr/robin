@@ -22,13 +22,33 @@ export interface PatientBriefing {
   detectedAt: number;
 }
 
+export type AmbientMode = "ambient" | "dictating" | "qa_session";
+
+export type AgentCommandType =
+  | "patient_briefing"
+  | "disposition"
+  | "physical_exam"
+  | "ekg_interpretation"
+  | "mdm_dictation"
+  | "ed_course"
+  | "order_log"
+  | "lab_results"
+  | "radiology"
+  | "discharge_instructions"
+  | "final_diagnosis"
+  | "consult_log"
+  | "consult_recommendations"
+  | "encounter_update"
+  | "voice_undo"
+  | "voice_remove";
+
 export interface AgentActionResult {
   id: string;
   ok: boolean;
   actionTaken: string;
   confidence: number;
   confirmationRequired: boolean;
-  commandType: "patient_briefing" | "disposition";
+  commandType: AgentCommandType;
   parsedPayload?: unknown;
   encounters?: Array<{
     id: string;
@@ -42,6 +62,140 @@ export interface AgentActionResult {
   }>;
   encounterId?: string;
   shiftId?: string;
+  undoActionId?: string;
+  // For dictation/QA sessions
+  requiresDictation?: boolean;
+  requiresQA?: string; // procedure type
+}
+
+// ─── Layer 3 voice command patterns ─────────────────────────────────────────
+
+const COMMAND_PATTERNS: Array<{
+  type: AgentCommandType;
+  patterns: RegExp[];
+  requiresDictation?: boolean;
+}> = [
+  {
+    type: "physical_exam",
+    patterns: [
+      /\b(physical\s+exam|exam\s+for|PE\s+for)\b/i,
+      /\bphysical\s+exams?\s+for\s+you\b/i,
+    ],
+    requiresDictation: true,
+  },
+  {
+    type: "ekg_interpretation",
+    patterns: [
+      /\bnormal\s+e[ck]g\b/i,
+      /\badd\s+e[ck]g\b/i,
+      /\be[ck]g\s+(for|shows)\b/i,
+    ],
+  },
+  {
+    type: "mdm_dictation",
+    patterns: [
+      /\bmdm\s+(for|is\s+as\s+follows)\b/i,
+      /\bupdate\s+mdm\b/i,
+    ],
+    requiresDictation: true,
+  },
+  {
+    type: "ed_course",
+    patterns: [
+      /\b(add\s+a\s+)?reassessment\b/i,
+      /\bre-?eval(uation)?\s+for\b/i,
+    ],
+    requiresDictation: true,
+  },
+  {
+    type: "order_log",
+    patterns: [
+      /\b(adding|ordered?|i('m|\s+am)\s+adding)\s+(labs?|imaging|medication)\b/i,
+      /\bordered?\s+(a\s+)?(ct|cxr|xr|x-ray|mri|cbc|bmp|troponin)\b/i,
+    ],
+  },
+  {
+    type: "lab_results",
+    patterns: [
+      /\blabs?\s+(back|results?)\b/i,
+      /\blab\s+results?\s+for\b/i,
+    ],
+    requiresDictation: true,
+  },
+  {
+    type: "radiology",
+    patterns: [
+      /\b(radiology|ct\s+read|xr|x-ray)\s+(for|shows)\b/i,
+      /\bradiology\s+for\b/i,
+    ],
+    requiresDictation: true,
+  },
+  {
+    type: "discharge_instructions",
+    patterns: [
+      /\b(prepare|generate)?\s*discharge\s+instructions\b/i,
+      /\bdc\s+instructions\b/i,
+    ],
+  },
+  {
+    type: "final_diagnosis",
+    patterns: [
+      /\b(final\s+)?diagnosis\s+(for|is)\b/i,
+      /\bfinal\s+diagnosis\b/i,
+    ],
+  },
+  {
+    type: "consult_recommendations",
+    patterns: [/\brecommendations?\s+for\b/i],
+    requiresDictation: true,
+  },
+  {
+    type: "encounter_update",
+    patterns: [
+      /\b(change|update|add)\s+encounter\b/i,
+      /\b(change|add)\s+(the\s+)?(last\s+)?name\b/i,
+    ],
+  },
+  {
+    type: "voice_undo",
+    patterns: [/\bscratch\s+that\b/i, /\bundo\s+(that|it)?\b/i],
+  },
+  {
+    type: "voice_remove",
+    patterns: [
+      /\bremove\s+(the\s+)?(last\s+)?/i,
+      /\bclear\s+(the\s+)?/i,
+    ],
+  },
+  {
+    type: "disposition",
+    patterns: [
+      /\b(ready\s+to\s+go|discharge|admitted|going\s+home|ama)\b/i,
+      /\baccepted\s+(to|by)\b/i,
+    ],
+  },
+];
+
+// Passive consult detection — no wake word needed
+const CONSULT_PATTERNS = [
+  /\b(ortho|surgery|cardiology|hospitalist|neurology|urology|GI|ENT|ophthalmology|psychiatry|OB|nephrology)\b.*\b(called|accepted|coming|spoke|on board)\b/i,
+  /\b(called|accepted|coming|spoke|on board)\b.*\b(ortho|surgery|cardiology|hospitalist|neurology|urology|GI|ENT|ophthalmology|psychiatry|OB|nephrology)\b/i,
+  /\bDr\.\s+\w+\s+(from|with)\s+\w+\s+(accepted|called)\b/i,
+];
+
+function classifyCommand(
+  command: string
+): { type: AgentCommandType; requiresDictation: boolean } | null {
+  for (const { type, patterns, requiresDictation } of COMMAND_PATTERNS) {
+    if (patterns.some((p) => p.test(command))) {
+      return { type, requiresDictation: requiresDictation || false };
+    }
+  }
+  return null;
+}
+
+function isConsultDetection(transcript: string): boolean {
+  return CONSULT_PATTERNS.some((p) => p.test(transcript));
 }
 
 // Patient briefing patterns — distinguish from re-eval
@@ -62,6 +216,7 @@ interface UseShiftAmbientReturn {
   isListening: boolean;
   isConnected: boolean;
   isPausedForRobin: boolean;
+  ambientMode: AmbientMode;
   error: string | null;
   currentTranscript: string;
   pendingEncounter: DetectedEncounter | null;
@@ -70,12 +225,14 @@ interface UseShiftAmbientReturn {
   pendingAction: AgentActionResult | null;
   pendingConfirmation: AgentActionResult | null;
   pendingRobinQuery: string | null;
-  robinActivated: boolean;          // true briefly after wake word — triggers voice mic
+  robinActivated: boolean;
   setShiftId: (id: string | null) => void;
   startListening: () => Promise<void>;
   stopListening: () => void;
-  pauseForRobin: () => void;        // release mic so Robin chat can take over
-  resumeFromRobin: () => void;      // restart ambient after Robin chat finishes
+  pauseForRobin: () => void;
+  resumeFromRobin: () => void;
+  endDictation: () => void;          // signal dictation session complete
+  endQASession: () => void;          // signal QA session complete
   dismissPendingEncounter: () => void;
   confirmPendingEncounter: () => DetectedEncounter | null;
   dismissReval: () => void;
@@ -161,8 +318,10 @@ export function useShiftAmbient(): UseShiftAmbientReturn {
   const [robinActivated, setRobinActivated] = useState(false);
   const [pendingAction, setPendingAction] = useState<AgentActionResult | null>(null);
   const [pendingConfirmation, setPendingConfirmation] = useState<AgentActionResult | null>(null);
+  const [ambientMode, setAmbientMode] = useState<AmbientMode>("ambient");
   const isPausedRef = useRef(false);
   const shiftIdRef = useRef<string | null>(null);
+  const dictationBufferContentRef = useRef("");
 
   const { request: requestWakeLock, release: releaseWakeLock } = useWakeLock();
 
@@ -218,19 +377,37 @@ export function useShiftAmbient(): UseShiftAmbientReturn {
         const wakeCommand = extractWakeCommand(transcript);
         if (wakeCommand) {
           const wordCount = wakeCommand.trim().split(/\s+/).length;
-          if (isPatientBriefing(wakeCommand)) {
+          // Layer 3: classify all voice commands
+          const classified = classifyCommand(wakeCommand);
+
+          if (classified && shiftIdRef.current) {
+            if (classified.requiresDictation) {
+              // Enter dictation mode — client captures content, sends on endDictation
+              setAmbientMode("dictating");
+              dictationBufferContentRef.current = "";
+              setPendingAction({
+                id: crypto.randomUUID(),
+                ok: true,
+                actionTaken: `Dictating: ${classified.type.replace(/_/g, " ")}`,
+                confidence: 1,
+                confirmationRequired: false,
+                commandType: classified.type,
+                requiresDictation: true,
+              });
+            } else {
+              // Fire immediately
+              fireAgentAct(shiftIdRef.current, classified.type, wakeCommand);
+            }
+          } else if (isPatientBriefing(wakeCommand)) {
             setPendingBriefing({ raw: wakeCommand, detectedAt: Date.now() });
-            // Layer 1: also fire agent/act for autonomous DB write
             if (shiftIdRef.current) {
               fireAgentAct(shiftIdRef.current, "patient_briefing", wakeCommand);
             }
           } else if (isRevalCommand(wakeCommand)) {
             setPendingReval({ raw: wakeCommand, detectedAt: Date.now() });
           } else if (wordCount >= 4) {
-            // Full command — send straight to Robin chat
             setPendingRobinQuery(wakeCommand);
           } else {
-            // Short/no follow-up — open chat and activate voice mic
             setRobinActivated(true);
           }
           return;
@@ -239,6 +416,18 @@ export function useShiftAmbient(): UseShiftAmbientReturn {
         // EMS radio chatter — skip encounter detection entirely
         if (isRadioChatter(transcript)) {
           return;
+        }
+
+        // Dictation mode — accumulate to dictation buffer, not ambient
+        if (ambientMode === "dictating") {
+          dictationBufferContentRef.current += ` ${transcript}`;
+          setCurrentTranscript(dictationBufferContentRef.current.trim());
+          return;
+        }
+
+        // Passive consult detection — no wake word needed
+        if (isConsultDetection(transcript) && shiftIdRef.current) {
+          fireAgentAct(shiftIdRef.current, "consult_log", transcript);
         }
 
         setCurrentTranscript((prev) =>
@@ -258,7 +447,8 @@ export function useShiftAmbient(): UseShiftAmbientReturn {
         }
       }
     },
-    [pendingEncounter, runDetection]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [pendingEncounter, runDetection, ambientMode]
   );
 
   const fetchDeepgramToken = async (): Promise<string> => {
@@ -430,7 +620,7 @@ export function useShiftAmbient(): UseShiftAmbientReturn {
   const fireAgentAct = useCallback(
     async (
       shiftId: string,
-      commandType: "patient_briefing" | "disposition",
+      commandType: AgentCommandType,
       rawText: string,
       encounterId?: string
     ) => {
@@ -503,6 +693,28 @@ export function useShiftAmbient(): UseShiftAmbientReturn {
     []
   );
 
+  // End dictation — send accumulated content to agent/act
+  const endDictation = useCallback(() => {
+    if (ambientMode !== "dictating") return;
+    const content = dictationBufferContentRef.current.trim();
+    setAmbientMode("ambient");
+    dictationBufferContentRef.current = "";
+
+    if (content && shiftIdRef.current && pendingAction?.commandType) {
+      fireAgentAct(
+        shiftIdRef.current,
+        pendingAction.commandType,
+        content,
+        undefined
+      );
+    }
+  }, [ambientMode, pendingAction, fireAgentAct]);
+
+  // End Q&A session
+  const endQASession = useCallback(() => {
+    setAmbientMode("ambient");
+  }, []);
+
   const clearRobinQuery = useCallback(() => {
     setPendingRobinQuery(null);
   }, []);
@@ -553,6 +765,7 @@ export function useShiftAmbient(): UseShiftAmbientReturn {
     isListening,
     isConnected,
     isPausedForRobin,
+    ambientMode,
     error,
     currentTranscript,
     pendingEncounter,
@@ -567,6 +780,8 @@ export function useShiftAmbient(): UseShiftAmbientReturn {
     stopListening,
     pauseForRobin,
     resumeFromRobin,
+    endDictation,
+    endQASession,
     dismissPendingEncounter,
     confirmPendingEncounter,
     dismissReval,

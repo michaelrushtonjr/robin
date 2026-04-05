@@ -5,7 +5,7 @@ export interface ConfirmCardData {
   message: string;
   detail?: string;
   payload: unknown;
-  commandType: "patient_briefing" | "disposition";
+  commandType: string;
   shiftId: string;
   encounterId?: string;
 }

@@ -85,7 +85,9 @@ E&M billing reconciliation, mid-shift audits, and post-discharge voice callbacks
       /clarification-questions/   ← Post-encounter gap clarification
       /parse-patients/            ← Patient briefing parser
       /deepgram-token/            ← Auth-gated short-lived Deepgram token (30s JWT, server-side only)
-      /agent/act/                 ← Ambient command → DB write (Layer 1: briefing + disposition)
+      /agent/act/                 ← Ambient command gateway (Layer 1+3: 16 command types, encounter resolution, tier classification)
+      /agent/undo/                ← Voice undo — restores previous_state from robin_actions
+      /agent/procedure-qa/        ← Procedure Q&A — 5 procedure types, KB-driven question sequences
       /onboarding-interview/      ← Streaming interview chat for physician onboarding (Layer 2)
       /physician/preferences/     ← Save physician preferences (POST, auth-gated)
       /note/section/              ← PATCH — update a specific note section (conflict detection)
@@ -104,7 +106,9 @@ E&M billing reconciliation, mid-shift audits, and post-discharge voice callbacks
     NoteOutput.tsx                ← Generated note display + copy to EHR
     RobinInsightsPanel.tsx        ← MDM audit panel (SSE-driven, progressive: HPI → MDM → gaps → E&M)
     RobinToast.tsx                ← Inline action confirmation toasts (Layer 1)
-    ConfirmCard.tsx               ← Uncertain parse confirmation UI (Layer 1)
+    ConfirmCard.tsx               ← Uncertain parse confirmation UI (Layer 1+3)
+    DisambiguationCard.tsx        ← "Which encounter?" push-button card (Layer 3)
+    BatchPECard.tsx               ← Multi-patient PE dictation card (Layer 3)
     TranscriptPanel.tsx           ← Full transcript view
     /capture
       ControlBar.tsx              ← Pause / dictate / end controls
@@ -247,7 +251,13 @@ Layer 2 interview chat. Streams Robin's conversational preference discovery. Use
 Saves `RobinPreferences` to `physicians.robin_preferences`. Auth-gated. No streaming.
 
 ### `/api/agent/act` (POST) — ✅ COMPLETE
-Layer 1 ambient command gateway. Handles `patient_briefing` and `disposition` commands. Claude-based parse via Haiku. Confidence scoring with auto/confirm tiers (threshold: 0.7). Writes to `encounters` + `robin_actions` audit table. Auth-gated.
+Full ambient command gateway (Layers 1+3). 16 command types: briefing, disposition, PE, EKG, MDM, ED course, orders, labs, radiology, discharge instructions, final diagnosis (ICD-10), consults, encounter update, voice undo, voice remove. Encounter resolution (name/room/number/recency). Confidence tiers. Claude Haiku parse. Writes to living note + `robin_actions` audit table.
+
+### `/api/agent/undo` (POST) — ✅ COMPLETE
+Restores `previous_state` from `robin_actions`. Supports note section, encounter field, and encounter deletion undos. Redo = undo the undo action.
+
+### `/api/agent/procedure-qa` (POST) — ✅ COMPLETE
+KB-driven procedure Q&A. 5 procedures: sedation/closed reduction, lac repair, I&D, intubation/RSI, splinting. Returns next question or assembles procedure note via Claude on completion. Writes to `note.procedures`.
 
 ### `/api/note/section` (PATCH) — ✅ COMPLETE
 Updates a specific note section. Supports `set` and `append` operations. Optimistic locking via `note_version`. Handles text sections, array sections, and nested diagnostic_results. Auth-gated.
@@ -438,7 +448,7 @@ the SESSIONS.md entry is short — but it still exists.
 4. ~~**Layer 2 — Physician Onboarding Interview**~~ ✅ Done — conversational interview, preferences save, shift redirect, natural language context injection
 5. ~~**Layer 1 — Ambient Command**~~ ✅ Done — `/api/agent/act`, `robin_actions` audit table, toast + confirm card, useShiftAmbient wiring
 6. ~~**Note Dashboard**~~ ✅ Done — EncounterNote types, 3 API routes, `/shift/notes` + `/shift/notes/[id]`, badges, edit, finalize, copy
-7. **Layer 3 — Dashboard & Chart Agency** — state machine, dictation sessions, 15+ voice command types
+7. ~~**Layer 3 — Dashboard & Chart Agency**~~ ✅ Done — state machine, 16 command types, procedure Q&A, undo, passive consult detection, disambiguation + batch PE cards
 8. **AudioWorklet migration** — replace deprecated `ScriptProcessorNode` (TD-001)
 9. **BAAs** — all five vendors
 10. **Wizard of Oz validation** — Rode mic + Voice Memos + manual Claude run

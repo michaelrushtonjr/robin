@@ -141,7 +141,7 @@ export default function ShiftDashboard() {
         actionTaken: card.message,
         confidence: 0.5,
         confirmationRequired: true,
-        commandType: card.commandType,
+        commandType: card.commandType as AgentActionResult["commandType"],
         parsedPayload: card.payload,
         shiftId: card.shiftId,
         encounterId: card.encounterId,
