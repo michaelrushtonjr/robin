@@ -9,6 +9,24 @@ Keep each entry tight — 5–10 lines max. This is a log, not documentation.
 
 ## Sessions
 
+### 2026-04-05 — Note Dashboard: Living Note Architecture
+**Built:**
+- `/src/lib/robinTypes.ts` — added EncounterNote, NoteSection, OrderEntry, EKGEntry, RadiologyEntry, LabResultEntry, ProcedureEntry, EDCourseEntry, ConsultEntry, NoteBadge, computeNoteBadges(), createEmptyNote()
+- `/supabase/migrations/005_note_dashboard.sql` — `note` jsonb + `note_version` integer on encounters
+- `/src/app/api/note/section/route.ts` — PATCH: update any note section (text set/append, array push, nested diagnostic_results), optimistic locking via note_version
+- `/src/app/api/note/finalize/route.ts` — POST: assembles all sections, Claude Sonnet polish, writes finalized_at + generated_note
+- `/src/app/api/note/status/route.ts` — GET: badge state for all shift encounters (PE, MDM, Dx, Dispo, Orders, Consult, Complete)
+- `/src/app/shift/notes/page.tsx` — encounter list with completion badges, time-ago, draft/finalized status, section counts
+- `/src/app/shift/notes/[id]/page.tsx` — single note view: 13 sections in scroll, 3 tabs (note/billing/discharge), per-section edit, finalize button, copy-to-clipboard
+
+**Decided:**
+- Note initialized lazily on first section write (not on encounter create) — avoids empty jsonb bloat
+- computeNoteBadges() is a pure function in robinTypes.ts — shared by API and client
+- Finalization writes to both note.finalized_at AND encounters.generated_note for backward compat with existing NoteOutput component
+
+**Next:**
+- Layer 3: state machine, dictation sessions, voice command taxonomy
+
 ### 2026-04-05 — Layer 1: Ambient Command
 **Built:**
 - `/supabase/migrations/004_layer1_ambient_command.sql` — robin_actions audit table + encounter columns (created_by_robin, disposition, accepting_physician, patient_name)

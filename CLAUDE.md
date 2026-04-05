@@ -88,8 +88,13 @@ E&M billing reconciliation, mid-shift audits, and post-discharge voice callbacks
       /agent/act/                 ← Ambient command → DB write (Layer 1: briefing + disposition)
       /onboarding-interview/      ← Streaming interview chat for physician onboarding (Layer 2)
       /physician/preferences/     ← Save physician preferences (POST, auth-gated)
+      /note/section/              ← PATCH — update a specific note section (conflict detection)
+      /note/finalize/             ← POST — polish accumulated note, produce copy-ready document
+      /note/status/               ← GET — badge state for all shift encounters
     /shift/page.tsx               ← Shift dashboard (redirects to /onboarding if preferences empty)
     /shift/encounter/[id]/page.tsx ← Encounter capture screen (primary screen)
+    /shift/notes/page.tsx         ← Note dashboard — encounter list with completion badges
+    /shift/notes/[id]/page.tsx    ← Single note view — 13 sections, tabs (note/billing/discharge), edit + finalize
     /onboarding/page.tsx          ← Physician onboarding interview screen (Layer 2)
     /login/page.tsx
   /components
@@ -117,7 +122,7 @@ E&M billing reconciliation, mid-shift audits, and post-discharge voice callbacks
     deepgram.ts                   ← WebSocket factory, config, types
     robinPersona.ts               ← ROBIN_IDENTITY + buildRobinContext() + translatePreferences()
     robinSystemPrompt.ts          ← System prompt for note generation
-    robinTypes.ts                 ← RobinInsight, RobinAuditState, RobinPreferences, MDM types
+    robinTypes.ts                 ← RobinInsight, RobinAuditState, RobinPreferences, EncounterNote, MDM types
     mdmScoring.ts                 ← Pure MDM scoring functions: deriveOverallMDM, getNextCode, RVU_MAP
     /supabase
       client.ts                   ← Browser Supabase client
@@ -128,6 +133,7 @@ E&M billing reconciliation, mid-shift audits, and post-discharge voice callbacks
   002_encounter_demographics.sql  ← age, gender columns
   003_robin_chat.sql              ← Chat history table
   004_layer1_ambient_command.sql  ← robin_actions table + encounter columns (Layer 1)
+  005_note_dashboard.sql          ← note jsonb + note_version columns on encounters
 /docs
   agent-roster.md                 ← Full agent definitions
   robin-agentic-spec.md           ← Master agentic capability spec (Layers 1–3, Note Dashboard, Living Note)
@@ -177,6 +183,8 @@ E&M billing reconciliation, mid-shift audits, and post-discharge voice callbacks
 - `transcript` (text), `generated_note` (text)
 - `mdm_data` (jsonb — **currently empty, MDM scaffold writes here**)
 - `ehr_mode` (epic/cerner)
+- `note` (jsonb — living note, EncounterNote structure)
+- `note_version` (integer, default 1 — optimistic locking)
 - `created_by_robin` (boolean, default false)
 - `disposition` (text)
 - `accepting_physician` (text)
@@ -240,6 +248,15 @@ Saves `RobinPreferences` to `physicians.robin_preferences`. Auth-gated. No strea
 
 ### `/api/agent/act` (POST) — ✅ COMPLETE
 Layer 1 ambient command gateway. Handles `patient_briefing` and `disposition` commands. Claude-based parse via Haiku. Confidence scoring with auto/confirm tiers (threshold: 0.7). Writes to `encounters` + `robin_actions` audit table. Auth-gated.
+
+### `/api/note/section` (PATCH) — ✅ COMPLETE
+Updates a specific note section. Supports `set` and `append` operations. Optimistic locking via `note_version`. Handles text sections, array sections, and nested diagnostic_results. Auth-gated.
+
+### `/api/note/finalize` (POST) — ✅ COMPLETE
+Polishes accumulated note via Claude Sonnet. Assembles all populated sections, sends to Claude for cleanup, writes `finalized_at` + `generated_note`. Auth-gated.
+
+### `/api/note/status` (GET) — ✅ COMPLETE
+Returns badge state (PE, MDM, Dx, Dispo, Orders, Consult, Complete) for all shift encounters without fetching full note content. Auth-gated.
 
 ---
 
@@ -347,8 +364,8 @@ This allows robin-think to say: "You've been documenting your ROS as 'reviewed a
 | Shift dashboard | ✅ Built |
 | Encounter capture (primary) | ✅ Built |
 | Onboarding interview | ✅ Built — Layer 2 |
-| Note dashboard (`/shift/notes`) | 🔲 Spec exists — after Layer 1 |
-| Single note view (`/shift/notes/[id]`) | 🔲 Spec exists — after Layer 1 |
+| Note dashboard (`/shift/notes`) | ✅ Built |
+| Single note view (`/shift/notes/[id]`) | ✅ Built — tabs, edit, finalize, copy |
 | Physician profile / settings | 🔲 Not started |
 
 ---
@@ -420,7 +437,7 @@ the SESSIONS.md entry is short — but it still exists.
 3. ~~**Deepgram proxy**~~ ✅ Done — key is server-side via `/api/deepgram-token`
 4. ~~**Layer 2 — Physician Onboarding Interview**~~ ✅ Done — conversational interview, preferences save, shift redirect, natural language context injection
 5. ~~**Layer 1 — Ambient Command**~~ ✅ Done — `/api/agent/act`, `robin_actions` audit table, toast + confirm card, useShiftAmbient wiring
-6. **Note Dashboard** — living note architecture, `/shift/notes`, section editing, finalization + copy
+6. ~~**Note Dashboard**~~ ✅ Done — EncounterNote types, 3 API routes, `/shift/notes` + `/shift/notes/[id]`, badges, edit, finalize, copy
 7. **Layer 3 — Dashboard & Chart Agency** — state machine, dictation sessions, 15+ voice command types
 8. **AudioWorklet migration** — replace deprecated `ScriptProcessorNode` (TD-001)
 9. **BAAs** — all five vendors
