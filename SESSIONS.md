@@ -9,6 +9,29 @@ Keep each entry tight — 5–10 lines max. This is a log, not documentation.
 
 ## Sessions
 
+### 2026-04-05 — Layer 1: Ambient Command
+**Built:**
+- `/supabase/migrations/004_layer1_ambient_command.sql` — robin_actions audit table + encounter columns (created_by_robin, disposition, accepting_physician, patient_name)
+- `/src/app/api/agent/act/route.ts` — command gateway for patient_briefing + disposition; Claude Haiku parse, confidence scoring, auto/confirm tier (0.7 threshold), DB write + audit log
+- `/src/components/RobinToast.tsx` — inline action confirmation toast with auto-dismiss, fade animation
+- `/src/components/ConfirmCard.tsx` — uncertain parse confirmation card (amber styling, confirm/dismiss buttons)
+- `/src/hooks/useShiftAmbient.ts` — extended with agent/act integration: fires POST on briefing detection, exposes pendingAction/pendingConfirmation state, setShiftId, confirmAction
+- `/src/app/shift/page.tsx` — wired toast + confirm card, auto-refresh encounter list on agent action, shiftId sync to ambient hook
+
+**Decided:**
+- Haiku for parse (fast, cheap) — briefing + disposition parsing don't need Sonnet
+- pendingBriefing kept for backward compat; agent/act fires in parallel
+- Confirm threshold at 0.7 — below that, physician must tap Confirm
+- robin_actions logs previous_state on every write for undo capability (Layer 3)
+
+**Deferred:**
+- Disposition detection from ambient (no wake word trigger yet — requires Layer 3 state machine)
+- Undo route (/api/agent/undo) — Layer 3 deliverable
+
+**Next:**
+- Note Dashboard — living note architecture, /shift/notes routes
+- Layer 3 — state machine, dictation sessions, voice command taxonomy
+
 ### 2026-04-05 — Layer 2: Physician Onboarding Interview
 **Built:**
 - `/src/lib/robinTypes.ts` — added `RobinPreferences` interface (11 fields + specialty_flags + metadata)

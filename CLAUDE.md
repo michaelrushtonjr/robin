@@ -85,6 +85,7 @@ E&M billing reconciliation, mid-shift audits, and post-discharge voice callbacks
       /clarification-questions/   ← Post-encounter gap clarification
       /parse-patients/            ← Patient briefing parser
       /deepgram-token/            ← Auth-gated short-lived Deepgram token (30s JWT, server-side only)
+      /agent/act/                 ← Ambient command → DB write (Layer 1: briefing + disposition)
       /onboarding-interview/      ← Streaming interview chat for physician onboarding (Layer 2)
       /physician/preferences/     ← Save physician preferences (POST, auth-gated)
     /shift/page.tsx               ← Shift dashboard (redirects to /onboarding if preferences empty)
@@ -97,6 +98,8 @@ E&M billing reconciliation, mid-shift audits, and post-discharge voice callbacks
     ClarificationPanel.tsx        ← Post-encounter clarification Q&A
     NoteOutput.tsx                ← Generated note display + copy to EHR
     RobinInsightsPanel.tsx        ← MDM audit panel (SSE-driven, progressive: HPI → MDM → gaps → E&M)
+    RobinToast.tsx                ← Inline action confirmation toasts (Layer 1)
+    ConfirmCard.tsx               ← Uncertain parse confirmation UI (Layer 1)
     TranscriptPanel.tsx           ← Full transcript view
     /capture
       ControlBar.tsx              ← Pause / dictate / end controls
@@ -124,6 +127,7 @@ E&M billing reconciliation, mid-shift audits, and post-discharge voice callbacks
   001_initial_schema.sql          ← physicians, shifts, encounters + RLS
   002_encounter_demographics.sql  ← age, gender columns
   003_robin_chat.sql              ← Chat history table
+  004_layer1_ambient_command.sql  ← robin_actions table + encounter columns (Layer 1)
 /docs
   agent-roster.md                 ← Full agent definitions
   robin-agentic-spec.md           ← Master agentic capability spec (Layers 1–3, Note Dashboard, Living Note)
@@ -173,9 +177,18 @@ E&M billing reconciliation, mid-shift audits, and post-discharge voice callbacks
 - `transcript` (text), `generated_note` (text)
 - `mdm_data` (jsonb — **currently empty, MDM scaffold writes here**)
 - `ehr_mode` (epic/cerner)
+- `created_by_robin` (boolean, default false)
+- `disposition` (text)
+- `accepting_physician` (text)
+- `patient_name` (text)
 
 ### `robin_chat` (migration 003)
 - Chat history per shift — check migration for exact columns
+
+### `robin_actions` (migration 004)
+- `id`, `shift_id`, `encounter_id`, `action_type`, `raw_command`
+- `parsed_payload` (jsonb), `confidence` (float), `confirmed_by_physician` (boolean)
+- `previous_state` (jsonb — for undo), `note_section_affected` (text)
 
 ---
 
@@ -224,6 +237,9 @@ Layer 2 interview chat. Streams Robin's conversational preference discovery. Use
 
 ### `/api/physician/preferences` (POST) — ✅ COMPLETE
 Saves `RobinPreferences` to `physicians.robin_preferences`. Auth-gated. No streaming.
+
+### `/api/agent/act` (POST) — ✅ COMPLETE
+Layer 1 ambient command gateway. Handles `patient_briefing` and `disposition` commands. Claude-based parse via Haiku. Confidence scoring with auto/confirm tiers (threshold: 0.7). Writes to `encounters` + `robin_actions` audit table. Auth-gated.
 
 ---
 
@@ -403,7 +419,7 @@ the SESSIONS.md entry is short — but it still exists.
 2. ~~**SSE migration** for `robin-think`~~ ✅ Done — API streams events; UI consumes via SSE consumer + RobinInsightsPanel rewrite
 3. ~~**Deepgram proxy**~~ ✅ Done — key is server-side via `/api/deepgram-token`
 4. ~~**Layer 2 — Physician Onboarding Interview**~~ ✅ Done — conversational interview, preferences save, shift redirect, natural language context injection
-5. **Layer 1 — Ambient Command** — voice → DB writes via `/api/agent/act`, `robin_actions` audit table
+5. ~~**Layer 1 — Ambient Command**~~ ✅ Done — `/api/agent/act`, `robin_actions` audit table, toast + confirm card, useShiftAmbient wiring
 6. **Note Dashboard** — living note architecture, `/shift/notes`, section editing, finalization + copy
 7. **Layer 3 — Dashboard & Chart Agency** — state machine, dictation sessions, 15+ voice command types
 8. **AudioWorklet migration** — replace deprecated `ScriptProcessorNode` (TD-001)

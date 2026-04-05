@@ -4,7 +4,10 @@ import { useEffect, useState, useCallback, useMemo } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import { useShiftAmbient } from "@/hooks/useShiftAmbient";
+import type { AgentActionResult } from "@/hooks/useShiftAmbient";
 import RobinChat from "@/components/RobinChat";
+import RobinToast, { type ToastData } from "@/components/RobinToast";
+import ConfirmCard, { type ConfirmCardData } from "@/components/ConfirmCard";
 
 interface Shift {
   id: string;
@@ -71,6 +74,7 @@ export default function ShiftDashboard() {
   const [newAge, setNewAge] = useState("");
   const [newGender, setNewGender] = useState("");
   const [shiftTimer, setShiftTimer] = useState("00:00:00");
+  const [toasts, setToasts] = useState<ToastData[]>([]);
 
   const ambient = useShiftAmbient();
 
@@ -95,6 +99,61 @@ export default function ShiftDashboard() {
     }
     checkOnboarding();
   }, [supabase, router]);
+
+  // Sync shiftId to ambient hook for agent/act calls
+  useEffect(() => {
+    ambient.setShiftId(activeShift?.id ?? null);
+  }, [activeShift?.id, ambient]);
+
+  // When agent/act completes an auto-tier action, show toast + refresh encounters
+  useEffect(() => {
+    if (!ambient.pendingAction) return;
+    const action = ambient.pendingAction;
+
+    setToasts((prev) => [
+      ...prev,
+      {
+        id: action.id,
+        message: action.actionTaken,
+        type: "success" as const,
+      },
+    ]);
+
+    // If briefing created encounters, add them to the list
+    if (action.encounters && action.encounters.length > 0) {
+      setEncounters((prev) => {
+        const existingIds = new Set(prev.map((e) => e.id));
+        const newEncs = action.encounters!.filter(
+          (e) => !existingIds.has(e.id)
+        );
+        return [...newEncs.reverse(), ...prev];
+      });
+    }
+
+    ambient.dismissAction();
+  }, [ambient.pendingAction, ambient]);
+
+  const handleConfirm = useCallback(
+    (card: ConfirmCardData) => {
+      const actionResult: AgentActionResult = {
+        id: card.id,
+        ok: true,
+        actionTaken: card.message,
+        confidence: 0.5,
+        confirmationRequired: true,
+        commandType: card.commandType,
+        parsedPayload: card.payload,
+        shiftId: card.shiftId,
+        encounterId: card.encounterId,
+      };
+      ambient.confirmAction(actionResult);
+    },
+    [ambient]
+  );
+
+  const handleDismissToast = useCallback((id: string) => {
+    setToasts((prev) => prev.filter((t) => t.id !== id));
+  }, []);
 
   const loadShift = useCallback(async () => {
     const { data: shifts } = await supabase
@@ -597,6 +656,23 @@ export default function ShiftDashboard() {
             </div>
           )}
 
+          {/* Robin confirm card — uncertain parse */}
+          {ambient.pendingConfirmation && (
+            <ConfirmCard
+              card={{
+                id: ambient.pendingConfirmation.id,
+                message: ambient.pendingConfirmation.actionTaken,
+                detail: `Confidence: ${Math.round(ambient.pendingConfirmation.confidence * 100)}%`,
+                payload: ambient.pendingConfirmation.parsedPayload,
+                commandType: ambient.pendingConfirmation.commandType,
+                shiftId: ambient.pendingConfirmation.shiftId || activeShift?.id || "",
+                encounterId: ambient.pendingConfirmation.encounterId,
+              }}
+              onConfirm={handleConfirm}
+              onDismiss={() => ambient.dismissConfirmation()}
+            />
+          )}
+
           {/* Add encounter form */}
           <form
             onSubmit={addEncounter}
@@ -844,6 +920,9 @@ export default function ShiftDashboard() {
         onVoiceStart={ambient.pauseForRobin}
         onVoiceEnd={ambient.resumeFromRobin}
       />
+
+      {/* Robin toasts — action confirmations */}
+      <RobinToast toasts={toasts} onDismiss={handleDismissToast} />
     </div>
   );
 }

@@ -22,6 +22,28 @@ export interface PatientBriefing {
   detectedAt: number;
 }
 
+export interface AgentActionResult {
+  id: string;
+  ok: boolean;
+  actionTaken: string;
+  confidence: number;
+  confirmationRequired: boolean;
+  commandType: "patient_briefing" | "disposition";
+  parsedPayload?: unknown;
+  encounters?: Array<{
+    id: string;
+    chief_complaint: string | null;
+    age: number | null;
+    gender: string | null;
+    room: string | null;
+    patient_name: string | null;
+    status: string;
+    created_at: string;
+  }>;
+  encounterId?: string;
+  shiftId?: string;
+}
+
 // Patient briefing patterns — distinguish from re-eval
 const BRIEFING_PATTERNS = [
   /\b(about to|going to|going in to|heading to|heading in to)\s+(go\s+)?see\b/i,
@@ -45,8 +67,11 @@ interface UseShiftAmbientReturn {
   pendingEncounter: DetectedEncounter | null;
   pendingReval: RevalCommand | null;
   pendingBriefing: PatientBriefing | null;
+  pendingAction: AgentActionResult | null;
+  pendingConfirmation: AgentActionResult | null;
   pendingRobinQuery: string | null;
   robinActivated: boolean;          // true briefly after wake word — triggers voice mic
+  setShiftId: (id: string | null) => void;
   startListening: () => Promise<void>;
   stopListening: () => void;
   pauseForRobin: () => void;        // release mic so Robin chat can take over
@@ -55,6 +80,9 @@ interface UseShiftAmbientReturn {
   confirmPendingEncounter: () => DetectedEncounter | null;
   dismissReval: () => void;
   dismissBriefing: () => void;
+  dismissAction: () => void;
+  dismissConfirmation: () => void;
+  confirmAction: (card: AgentActionResult) => void;
   clearRobinQuery: () => void;
   clearRobinActivated: () => void;
 }
@@ -131,7 +159,10 @@ export function useShiftAmbient(): UseShiftAmbientReturn {
   const [pendingBriefing, setPendingBriefing] = useState<PatientBriefing | null>(null);
   const [pendingRobinQuery, setPendingRobinQuery] = useState<string | null>(null);
   const [robinActivated, setRobinActivated] = useState(false);
+  const [pendingAction, setPendingAction] = useState<AgentActionResult | null>(null);
+  const [pendingConfirmation, setPendingConfirmation] = useState<AgentActionResult | null>(null);
   const isPausedRef = useRef(false);
+  const shiftIdRef = useRef<string | null>(null);
 
   const { request: requestWakeLock, release: releaseWakeLock } = useWakeLock();
 
@@ -189,6 +220,10 @@ export function useShiftAmbient(): UseShiftAmbientReturn {
           const wordCount = wakeCommand.trim().split(/\s+/).length;
           if (isPatientBriefing(wakeCommand)) {
             setPendingBriefing({ raw: wakeCommand, detectedAt: Date.now() });
+            // Layer 1: also fire agent/act for autonomous DB write
+            if (shiftIdRef.current) {
+              fireAgentAct(shiftIdRef.current, "patient_briefing", wakeCommand);
+            }
           } else if (isRevalCommand(wakeCommand)) {
             setPendingReval({ raw: wakeCommand, detectedAt: Date.now() });
           } else if (wordCount >= 4) {
@@ -380,6 +415,94 @@ export function useShiftAmbient(): UseShiftAmbientReturn {
     setPendingBriefing(null);
   }, []);
 
+  const dismissAction = useCallback(() => {
+    setPendingAction(null);
+  }, []);
+
+  const dismissConfirmation = useCallback(() => {
+    setPendingConfirmation(null);
+  }, []);
+
+  const setShiftId = useCallback((id: string | null) => {
+    shiftIdRef.current = id;
+  }, []);
+
+  const fireAgentAct = useCallback(
+    async (
+      shiftId: string,
+      commandType: "patient_briefing" | "disposition",
+      rawText: string,
+      encounterId?: string
+    ) => {
+      try {
+        const res = await fetch("/api/agent/act", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ shiftId, commandType, rawText, encounterId }),
+        });
+        const data = await res.json();
+        if (!data.ok) return;
+
+        const result: AgentActionResult = {
+          id: crypto.randomUUID(),
+          ok: data.ok,
+          actionTaken: data.actionTaken,
+          confidence: data.confidence,
+          confirmationRequired: data.confirmationRequired,
+          commandType,
+          parsedPayload: data.parsedPayload,
+          encounters: data.encounters,
+          encounterId: data.encounterId,
+          shiftId,
+        };
+
+        if (data.confirmationRequired) {
+          setPendingConfirmation(result);
+        } else {
+          setPendingAction(result);
+        }
+      } catch {
+        // Agent act failure is non-fatal
+      }
+    },
+    []
+  );
+
+  const confirmAction = useCallback(
+    async (card: AgentActionResult) => {
+      setPendingConfirmation(null);
+      if (!card.shiftId || !card.parsedPayload) return;
+
+      // Re-send with forced confirmation — the server will create the records
+      // For now, handle client-side by calling agent/act again
+      // This is a simplified confirm: we trust the parsed payload
+      try {
+        const res = await fetch("/api/agent/act", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            shiftId: card.shiftId,
+            commandType: card.commandType,
+            rawText: `CONFIRMED: ${card.actionTaken}`,
+            encounterId: card.encounterId,
+          }),
+        });
+        const data = await res.json();
+        if (data.ok && !data.confirmationRequired) {
+          setPendingAction({
+            ...card,
+            actionTaken: data.actionTaken,
+            confirmationRequired: false,
+            encounters: data.encounters,
+          });
+        }
+      } catch {
+        // Confirmation failure is non-fatal
+      }
+    },
+    []
+  );
+
   const clearRobinQuery = useCallback(() => {
     setPendingRobinQuery(null);
   }, []);
@@ -435,8 +558,11 @@ export function useShiftAmbient(): UseShiftAmbientReturn {
     pendingEncounter,
     pendingReval,
     pendingBriefing,
+    pendingAction,
+    pendingConfirmation,
     pendingRobinQuery,
     robinActivated,
+    setShiftId,
     startListening,
     stopListening,
     pauseForRobin,
@@ -445,6 +571,9 @@ export function useShiftAmbient(): UseShiftAmbientReturn {
     confirmPendingEncounter,
     dismissReval,
     dismissBriefing,
+    dismissAction,
+    dismissConfirmation,
+    confirmAction,
     clearRobinQuery,
     clearRobinActivated,
   };
