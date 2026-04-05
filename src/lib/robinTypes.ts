@@ -71,3 +71,23 @@ export interface RobinAuditState {
   summary?: string;
   loading: boolean;
 }
+
+// ─── Physician Preferences (populated by Layer 2 onboarding interview) ──────
+
+export interface RobinPreferences {
+  mdm_depth: "scaffold_only" | "full_ap";
+  mdm_dictation_mode: "verbatim" | "structured";
+  hpi_style: "brief" | "extended";
+  gap_sensitivity: "high" | "medium" | "low";
+  em_posture: "conservative" | "accurate" | "aggressive";
+  note_verbosity: "concise" | "standard" | "thorough";
+  copy_mode: "full" | "sections";
+  ekg_normal_verbosity: "full" | "impression_only";
+  specialty_flags: {
+    include_ems_narrative: boolean;
+    auto_include_review_of_systems: boolean;
+    document_negative_findings: boolean;
+  };
+  interview_completed_at: string;
+  interview_version: number;
+}

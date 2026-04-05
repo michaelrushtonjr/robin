@@ -9,6 +9,30 @@ Keep each entry tight — 5–10 lines max. This is a log, not documentation.
 
 ## Sessions
 
+### 2026-04-05 — Layer 2: Physician Onboarding Interview
+**Built:**
+- `/src/lib/robinTypes.ts` — added `RobinPreferences` interface (11 fields + specialty_flags + metadata)
+- `/src/app/api/onboarding-interview/route.ts` — streaming interview chat, ROBIN_IDENTITY + interview system prompt, 8 question areas, JSON block output on completion
+- `/src/app/api/physician/preferences/route.ts` — auth-gated POST, saves preferences to `physicians.robin_preferences`
+- `/src/app/onboarding/page.tsx` — full-screen interview UI, streaming chat, JSON block detection, auto-redirect to /shift after save
+- `/src/app/shift/page.tsx` — added onboarding redirect check on mount (empty preferences → /onboarding)
+- `/src/lib/robinPersona.ts` — added `translatePreferences()`, replaces raw key:value dump with natural language directives in buildRobinContext()
+
+**Decided:**
+- New dedicated onboarding component (~230 lines) instead of reusing RobinChat (530 lines of shift-specific complexity)
+- Client-side redirect in shift page, not middleware (proxy.ts not wired as active Next.js middleware)
+- No new migration needed — `robin_preferences` JSONB column already exists from migration 003
+- JSON block stripped from displayed chat text, replaced with teal "Preferences saved" confirmation card
+
+**Deferred:**
+- Re-interview from /settings — clear `robin_preferences` in Supabase console to re-trigger for now
+- Voice input during onboarding — text-only for v1
+- interview_version bump re-trigger logic — open question in spec
+
+**Next:**
+- Browser test the full 8-question interview flow
+- Layer 1: Ambient Command → /api/agent/act + robin_actions audit table
+
 ### 2026-04-03 — MDM Scaffold Engine + UI Wiring
 **Built:**
 - `/src/app/api/robin-think/route.ts` — full rewrite: blocking POST → SSE,

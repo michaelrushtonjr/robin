@@ -33,6 +33,87 @@ BOUNDARIES
 - You do not provide medical advice to patients
 - You cannot directly access the EHR — you work from what's been captured in Robin`;
 
+// ─── Preference translation ───────────────────────────────────────────────────
+
+function translatePreferences(
+  prefs: Record<string, unknown> | null | undefined
+): string {
+  if (!prefs || Object.keys(prefs).length === 0) return "";
+
+  const lines: string[] = [];
+
+  if (prefs.mdm_depth === "scaffold_only") {
+    lines.push("- MDM: Build structure only — physician fills in content");
+  } else if (prefs.mdm_depth === "full_ap") {
+    lines.push("- MDM: Draft full assessment and plan for physician review");
+  }
+
+  if (prefs.mdm_dictation_mode === "verbatim") {
+    lines.push("- MDM dictation: Transcribe verbatim");
+  } else if (prefs.mdm_dictation_mode === "structured") {
+    lines.push("- MDM dictation: Integrate into AMA 2021 format");
+  }
+
+  if (prefs.hpi_style === "brief") {
+    lines.push("- HPI: Brief — location, severity, duration");
+  } else if (prefs.hpi_style === "extended") {
+    lines.push("- HPI: Extended — all OPQRST elements");
+  }
+
+  if (prefs.gap_sensitivity === "high") {
+    lines.push("- Gap flagging: Flag all missing elements");
+  } else if (prefs.gap_sensitivity === "medium") {
+    lines.push("- Gap flagging: Flag high-severity gaps only");
+  } else if (prefs.gap_sensitivity === "low") {
+    lines.push("- Gap flagging: Only gaps that affect E&M level");
+  }
+
+  if (prefs.em_posture === "conservative") {
+    lines.push("- E&M coding: Conservative — undercode rather than risk audit");
+  } else if (prefs.em_posture === "accurate") {
+    lines.push(
+      "- E&M coding: Accurate — code exactly what documentation supports"
+    );
+  } else if (prefs.em_posture === "aggressive") {
+    lines.push("- E&M coding: Aggressive — capture everything supportable");
+  }
+
+  if (prefs.note_verbosity === "concise") {
+    lines.push("- Note style: Concise");
+  } else if (prefs.note_verbosity === "standard") {
+    lines.push("- Note style: Standard detail");
+  } else if (prefs.note_verbosity === "thorough") {
+    lines.push("- Note style: Thorough — include pertinent negatives");
+  }
+
+  if (prefs.ekg_normal_verbosity === "full") {
+    lines.push("- EKG shorthand: Expand to full structured read");
+  } else if (prefs.ekg_normal_verbosity === "impression_only") {
+    lines.push("- EKG shorthand: Single impression line only");
+  }
+
+  if (prefs.copy_mode === "sections") {
+    lines.push("- Copy mode: Section by section");
+  } else if (prefs.copy_mode === "full") {
+    lines.push("- Copy mode: Full note copy");
+  }
+
+  const flags = prefs.specialty_flags as
+    | Record<string, boolean>
+    | undefined;
+  if (flags) {
+    if (flags.include_ems_narrative)
+      lines.push("- Include EMS narrative in HPI");
+    if (flags.auto_include_review_of_systems)
+      lines.push("- Auto-include review of systems");
+    if (flags.document_negative_findings)
+      lines.push("- Document pertinent negative findings");
+  }
+
+  if (lines.length === 0) return "";
+  return `\nPHYSICIAN PREFERENCES:\n${lines.join("\n")}`;
+}
+
 // ─── Context builder ──────────────────────────────────────────────────────────
 export interface RobinContext {
   systemPrompt: string;
@@ -107,13 +188,7 @@ ${currentEnc.generated_note ? `\nGenerated note:\n${currentEnc.generated_note.sl
   }
 
   // Build preferences block
-  const prefs = physician?.robin_preferences;
-  const prefBlock =
-    prefs && Object.keys(prefs).length > 0
-      ? `\nPHYSICIAN PREFERENCES:\n${Object.entries(prefs)
-          .map(([k, v]) => `  ${k}: ${v}`)
-          .join("\n")}`
-      : "";
+  const prefBlock = translatePreferences(physician?.robin_preferences);
 
   // Shift memory block
   const memory = shift?.robin_memory;

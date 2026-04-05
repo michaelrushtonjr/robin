@@ -85,8 +85,11 @@ E&M billing reconciliation, mid-shift audits, and post-discharge voice callbacks
       /clarification-questions/   ← Post-encounter gap clarification
       /parse-patients/            ← Patient briefing parser
       /deepgram-token/            ← Auth-gated short-lived Deepgram token (30s JWT, server-side only)
-    /shift/page.tsx               ← Shift dashboard
+      /onboarding-interview/      ← Streaming interview chat for physician onboarding (Layer 2)
+      /physician/preferences/     ← Save physician preferences (POST, auth-gated)
+    /shift/page.tsx               ← Shift dashboard (redirects to /onboarding if preferences empty)
     /shift/encounter/[id]/page.tsx ← Encounter capture screen (primary screen)
+    /onboarding/page.tsx          ← Physician onboarding interview screen (Layer 2)
     /login/page.tsx
   /components
     AudioCapture.tsx              ← Encounter-level audio UI (uses useAudio + useDeepgram)
@@ -109,9 +112,9 @@ E&M billing reconciliation, mid-shift audits, and post-discharge voice callbacks
     useWakeLock.ts                ← Screen wake lock for shift mode
   /lib
     deepgram.ts                   ← WebSocket factory, config, types
-    robinPersona.ts               ← ROBIN_IDENTITY + buildRobinContext()
+    robinPersona.ts               ← ROBIN_IDENTITY + buildRobinContext() + translatePreferences()
     robinSystemPrompt.ts          ← System prompt for note generation
-    robinTypes.ts                 ← RobinInsight, RobinAuditState, MDM types (MDMScaffold, HPICompleteness, MDMComplexity)
+    robinTypes.ts                 ← RobinInsight, RobinAuditState, RobinPreferences, MDM types
     mdmScoring.ts                 ← Pure MDM scoring functions: deriveOverallMDM, getNextCode, RVU_MAP
     /supabase
       client.ts                   ← Browser Supabase client
@@ -215,6 +218,12 @@ Post-encounter gap Q&A panel.
 
 ### `/api/parse-patients` (POST) — ✅ COMPLETE
 Parses patient briefing commands from ambient audio.
+
+### `/api/onboarding-interview` (streaming POST) — ✅ COMPLETE
+Layer 2 interview chat. Streams Robin's conversational preference discovery. Uses `ROBIN_IDENTITY` + interview system prompt. Outputs `RobinPreferences` JSON block when all 8 areas covered.
+
+### `/api/physician/preferences` (POST) — ✅ COMPLETE
+Saves `RobinPreferences` to `physicians.robin_preferences`. Auth-gated. No streaming.
 
 ---
 
@@ -321,7 +330,7 @@ This allows robin-think to say: "You've been documenting your ROS as 'reviewed a
 | Login | ✅ Built |
 | Shift dashboard | ✅ Built |
 | Encounter capture (primary) | ✅ Built |
-| Onboarding interview | 🔲 Next — Layer 2 |
+| Onboarding interview | ✅ Built — Layer 2 |
 | Note dashboard (`/shift/notes`) | 🔲 Spec exists — after Layer 1 |
 | Single note view (`/shift/notes/[id]`) | 🔲 Spec exists — after Layer 1 |
 | Physician profile / settings | 🔲 Not started |
@@ -393,7 +402,7 @@ the SESSIONS.md entry is short — but it still exists.
 1. ~~**MDM scaffold engine**~~ ✅ Done — 5-tool SSE pipeline, AMA 2021 scoring, shift memory
 2. ~~**SSE migration** for `robin-think`~~ ✅ Done — API streams events; UI consumes via SSE consumer + RobinInsightsPanel rewrite
 3. ~~**Deepgram proxy**~~ ✅ Done — key is server-side via `/api/deepgram-token`
-4. **Layer 2 — Physician Onboarding Interview** — Robin learns preferences via conversation, writes to `robin_preferences`
+4. ~~**Layer 2 — Physician Onboarding Interview**~~ ✅ Done — conversational interview, preferences save, shift redirect, natural language context injection
 5. **Layer 1 — Ambient Command** — voice → DB writes via `/api/agent/act`, `robin_actions` audit table
 6. **Note Dashboard** — living note architecture, `/shift/notes`, section editing, finalization + copy
 7. **Layer 3 — Dashboard & Chart Agency** — state machine, dictation sessions, 15+ voice command types

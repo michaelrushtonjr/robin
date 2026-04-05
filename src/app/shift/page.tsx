@@ -74,6 +74,28 @@ export default function ShiftDashboard() {
 
   const ambient = useShiftAmbient();
 
+  // Redirect to onboarding if preferences are empty
+  useEffect(() => {
+    async function checkOnboarding() {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data: physician } = await supabase
+        .from("physicians")
+        .select("robin_preferences")
+        .eq("id", user.id)
+        .single();
+
+      const prefs = physician?.robin_preferences;
+      if (!prefs || Object.keys(prefs).length === 0) {
+        router.push("/onboarding");
+      }
+    }
+    checkOnboarding();
+  }, [supabase, router]);
+
   const loadShift = useCallback(async () => {
     const { data: shifts } = await supabase
       .from("shifts")
