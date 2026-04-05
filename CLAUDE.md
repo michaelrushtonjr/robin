@@ -123,6 +123,7 @@ E&M billing reconciliation, mid-shift audits, and post-discharge voice callbacks
   003_robin_chat.sql              ← Chat history table
 /docs
   agent-roster.md                 ← Full agent definitions
+  robin-agentic-spec.md           ← Master agentic capability spec (Layers 1–3, Note Dashboard, Living Note)
 ```
 
 ---
@@ -320,10 +321,10 @@ This allows robin-think to say: "You've been documenting your ROS as 'reviewed a
 | Login | ✅ Built |
 | Shift dashboard | ✅ Built |
 | Encounter capture (primary) | ✅ Built |
-| Post-encounter note review | 🔲 Spec exists, not built |
-| Robin agent panel | 🔲 Spec exists, not built |
+| Onboarding interview | 🔲 Next — Layer 2 |
+| Note dashboard (`/shift/notes`) | 🔲 Spec exists — after Layer 1 |
+| Single note view (`/shift/notes/[id]`) | 🔲 Spec exists — after Layer 1 |
 | Physician profile / settings | 🔲 Not started |
-| Onboarding / shift activation | 🔲 Not started |
 
 ---
 
@@ -387,16 +388,19 @@ the SESSIONS.md entry is short — but it still exists.
 
 ## Build Priority Queue
 
+**Agentic roadmap:** Layer 2 → Layer 1 → Note Dashboard → Layer 3 (see `/docs/robin-agentic-spec.md`)
+
 1. ~~**MDM scaffold engine**~~ ✅ Done — 5-tool SSE pipeline, AMA 2021 scoring, shift memory
 2. ~~**SSE migration** for `robin-think`~~ ✅ Done — API streams events; UI consumes via SSE consumer + RobinInsightsPanel rewrite
-3. **AudioWorklet migration** — replace deprecated `ScriptProcessorNode`
-4. ~~**Deepgram proxy**~~ ✅ Done — key is server-side via `/api/deepgram-token`
-5. **Post-encounter note review screen** — Note/MDM/Billing tabs, E&M badge, copy to EHR
-6. **Robin agent panel** — open items, observations feed, RVU snapshot
-7. **OpenClaw bots** — Wren, Atlas, Ledger, Echo, Sage via Telegram
-8. **BAAs** — all five vendors
-9. **Wizard of Oz validation** — Rode mic + Voice Memos + manual Claude run
-10. **First trial shift**
+3. ~~**Deepgram proxy**~~ ✅ Done — key is server-side via `/api/deepgram-token`
+4. **Layer 2 — Physician Onboarding Interview** — Robin learns preferences via conversation, writes to `robin_preferences`
+5. **Layer 1 — Ambient Command** — voice → DB writes via `/api/agent/act`, `robin_actions` audit table
+6. **Note Dashboard** — living note architecture, `/shift/notes`, section editing, finalization + copy
+7. **Layer 3 — Dashboard & Chart Agency** — state machine, dictation sessions, 15+ voice command types
+8. **AudioWorklet migration** — replace deprecated `ScriptProcessorNode` (TD-001)
+9. **BAAs** — all five vendors
+10. **Wizard of Oz validation** — Rode mic + Voice Memos + manual Claude run
+11. **First trial shift**
 
 ---
 
