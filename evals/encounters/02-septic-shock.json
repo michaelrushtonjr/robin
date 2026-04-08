@@ -1,0 +1,26 @@
+{
+  "id": "02-septic-shock",
+  "description": "Elderly M, septic shock, RLL PNA, ICU + pressors",
+  "chiefComplaint": "Septic shock, likely pneumonia",
+  "disposition": "ICU admission",
+  "transcript": "Nurse: Dr. Park, triage just rolled back a sick one to room 9. Tachy to 130s, BP 78 over 40, temp 103.2, looks bad.\nDr. Park: On my way. Get a second IV, draw a lactate and cultures, start a liter wide open, and let me know when blood's drawn.\nNurse: Already on it.\n\nDr. Park: Hi sir, I'm Dr. Park, I'm one of the ER doctors. Can you tell me what's been going on?\nPatient: I... I don't feel good. I'm cold.\nDr. Park: When did you start feeling sick?\nPatient: Two days ago? Three? My wife made me come in.\nWife: He's been going downhill since Sunday. He had a fever Sunday night and he's been getting more and more confused. This morning he didn't know what day it was.\nDr. Park: Any cough, shortness of breath?\nWife: He's been coughing. Bringing up some yellow stuff. He said his side hurt when he breathed.\nDr. Park: Which side?\nWife: The right.\nDr. Park: Any burning with urination, belly pain, diarrhea?\nWife: No, none of that. He hasn't really been eating or drinking though. Maybe a few sips of water today.\nDr. Park: Any recent hospitalizations, antibiotics, surgeries?\nWife: He had a knee replacement six weeks ago. He's been doing physical therapy.\nDr. Park: Any problems with the knee, redness, drainage?\nWife: No, the knee's been fine.\nDr. Park: What medical problems does he have?\nWife: Diabetes, high blood pressure, he had a heart attack five years ago, he's on a bunch of stuff. I have the list.\nDr. Park: That's perfect, hand it to the nurse. Any allergies?\nWife: Sulfa.\nNurse: Dr. Park, lactate is 4.8, fingerstick 240, first liter is in, pressure is 82 over 44.\nDr. Park: Start the second liter wide open, let's get him broad-spectrum antibiotics — vanc and pip-tazo — and get a central line kit and a-line setup at the bedside. Call the ICU for a bed. He's going to need pressors, let's start norepi peripherally through the 18 in his AC while we get the line. Repeat lactate in an hour. And let's get a portable chest X-ray now.\nNurse: Got it.\nDr. Park: Sir, we're going to take really good care of you. You're very sick and we're going to need to put a couple of lines in and start some strong antibiotics, okay?\nPatient: Okay. Okay.\n\nPhysical exam (dictated): General: elderly male, ill-appearing, lethargic but arousable, mottled skin, in obvious distress. HEENT: mucous membranes very dry, sclera anicteric, pupils equal and reactive. Neck supple, no JVD, no lymphadenopathy. Cardiac tachycardic at 130s, regular, no appreciable murmurs, distant heart sounds. Lungs: rales and bronchial breath sounds at the right base, decreased breath sounds at the right base, egophony present, no wheezing. Abdomen soft, non-tender, non-distended, normoactive bowel sounds, no rebound or guarding. Right knee: well-healed surgical incision, no erythema, no warmth, no effusion, no drainage, full passive range of motion without significant pain. Extremities: cool to the touch from the knees and elbows distally, capillary refill greater than four seconds, mottling over the knees, distal pulses thready but palpable, no edema. Skin: diffuse mottling, no rashes, no petechiae, no purpura. Neuro: lethargic, arousable to voice, oriented to self only, follows simple commands intermittently, no obvious focal deficits, moves all four extremities, GCS approximately 13.",
+  "groundTruth": {
+    "code": "99291",
+    "codeAlternates": [],
+    "overallMDM": ["high"],
+    "axes": {
+      "problems": ["high"],
+      "data": ["moderate", "high"],
+      "risk": ["high"]
+    },
+    "requiredGapMentions": [
+      ["critical care time", "cc time", "30 min", "critical care minutes"]
+    ],
+    "forbiddenRationaleSubstrings": [
+      "data review to push toward 99291",
+      "data review to reach 99291",
+      "mdm data to 99291"
+    ],
+    "notes": "Textbook critical care. 99291 is time-based (>=30 min), NOT an MDM upgrade from 99285. CC time not documented is the #1 gap. Data complexity should be moderate or high, not low."
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "id": "05-stroke-tnk",
+  "description": "72F LKW 45 min, NIHSS 18, TNK administered, neuro consult",
+  "chiefComplaint": "Acute ischemic stroke",
+  "disposition": "Neuro ICU after TNK",
+  "transcript": "Charge: Dr. Nguyen, stroke alert triage, last known well 45 minutes ago, right-sided weakness and aphasia, 72-year-old female, daughter witnessed it.\nDr. Nguyen: Straight to CT. I'll meet them there. Page neuro.\n\nDr. Nguyen: Hi, I'm Dr. Nguyen. Ma'am, can you squeeze my hands? Both sides. Okay. Can you tell me your name?\nPatient: [unintelligible, slurred]\nDaughter: Her name is Margaret. I'm her daughter. She was making breakfast and I heard a crash and she was on the floor, she couldn't talk, this side of her face was drooping.\nDr. Nguyen: What time exactly?\nDaughter: 7:15. I looked at the clock right away because I knew it mattered.\nDr. Nguyen: She was completely normal before that?\nDaughter: Yes. She was talking to me a minute before. She was asking about my son.\nDr. Nguyen: Any medical problems?\nDaughter: A-fib, she's supposed to be on a blood thinner but she stopped it last month because she had a nosebleed and it scared her. High blood pressure, diabetes. She had a small heart attack years ago.\nDr. Nguyen: She's not on the blood thinner?\nDaughter: No. She stopped it.\nDr. Nguyen: Any recent surgeries, bleeding, head trauma?\nDaughter: No, nothing.\nDr. Nguyen: Any allergies?\nDaughter: No.\nCharge: CT is ready, let's move.\nDr. Nguyen: Ma'am, we're going to roll you into the scanner. Stay still for me.\n\nCharge: CT is negative for bleed, neuro is on the phone.\nDr. Nguyen: Get tPA — tenecteplase — drawn up, weight-based, and let's call for a CTA head and neck. I want her pressure under 185.\n\nPhysical exam (dictated): General: elderly female, awake, eyes open, not following commands consistently. HEENT: right facial droop involving the lower face, left facial movement intact, pupils equal and reactive, extraocular movements with left gaze preference. Neck supple. Cardiac irregularly irregular, no murmurs. Lungs clear. Abdomen soft, non-tender. Neuro: NIH stroke scale performed, significant expressive aphasia, unable to repeat, unable to name, follows some simple commands on the left, right upper extremity with no antigravity movement, right lower extremity with minimal movement against gravity, left side 5 out of 5 throughout, sensation decreased on the right by facial grimace, right-sided neglect present, dysarthria marked. Total NIH approximately 18. Extremities without edema. Skin intact.",
+  "groundTruth": {
+    "code": "99291",
+    "codeAlternates": [],
+    "overallMDM": ["high"],
+    "axes": {
+      "problems": ["high"],
+      "data": ["moderate", "high"],
+      "risk": ["high"]
+    },
+    "requiredGapMentions": [
+      ["critical care time", "cc time", "30 min", "critical care minutes"]
+    ],
+    "forbiddenRationaleSubstrings": [
+      "data review to push toward 99291",
+      "data review to reach 99291",
+      "mdm data to 99291"
+    ],
+    "notes": "Acute ischemic stroke with TNK administered. NIHSS 18, BP management, neuro discussion. TNK = parenteral drug requiring intensive monitoring. Textbook 99291. CC time gap is the must-flag. Independent historian (daughter) + CT indep interp + neuro discussion = high data."
+  }
+}

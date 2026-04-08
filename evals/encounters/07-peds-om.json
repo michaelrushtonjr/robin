@@ -1,0 +1,28 @@
+{
+  "id": "07-peds-om",
+  "description": "2yo F, fever 103.4 + AOM on exam, well-appearing",
+  "chiefComplaint": "Pediatric fever",
+  "disposition": "Discharge home with amoxicillin",
+  "transcript": "Dr. Park: Hey, I'm Dr. Park. Who do we have here?\nMother: This is Emma. She's two. She's had a fever since yesterday and she's just not herself.\nDr. Park: How high has the fever been?\nMother: 103.4 was the highest. I gave her Tylenol an hour ago.\nDr. Park: Any other symptoms? Cough, runny nose, pulling at the ears?\nMother: She's had a little bit of a runny nose for a few days. Her older brother had a cold last week. She hasn't been coughing really. Maybe pulling at her ear, I don't know, she does that sometimes anyway.\nDr. Park: Eating and drinking?\nMother: Not great. She had some juice today. She didn't want breakfast. She usually eats everything.\nDr. Park: Wet diapers?\nMother: Yeah, like normal I think? Maybe a little less.\nDr. Park: Any vomiting, diarrhea?\nMother: She threw up once last night. After I gave her Tylenol actually. No diarrhea.\nDr. Park: Any rash?\nMother: No, I checked.\nDr. Park: Is she vaccinated?\nMother: Yes, up to date.\nDr. Park: Any sick contacts besides her brother? Daycare?\nMother: She's in daycare two days a week. There's always something going around.\nDr. Park: Any trouble breathing, fast breathing that you've noticed?\nMother: No. She was actually playing a little bit this morning. But then this afternoon she just wanted to lay on me.\nDr. Park: Has she had a seizure, stiff neck, been really hard to wake up?\nMother: No, nothing like that. Am I overreacting? My husband thought I was overreacting.\nDr. Park: No, you're doing the right thing. Let me take a look at her.\n\nPhysical exam (dictated): General: two-year-old female, alert, sitting on mother's lap, mildly fussy but consolable, non-toxic appearing. HEENT: anterior fontanelle closed, tympanic membranes — left unremarkable, right erythematous and bulging with loss of landmarks, poor mobility, no drainage. Oropharynx with mild erythema, no tonsillar exudate, no ulcers, mucous membranes moist. Neck supple, full range of motion, small bilateral anterior cervical lymphadenopathy. Cardiac regular, tachycardic, no murmurs. Lungs clear bilaterally, no retractions, no stridor, no wheezing, good air movement. Abdomen soft, non-tender, non-distended. Skin: well-perfused, no rashes, no petechiae, capillary refill less than two seconds. Neuro: appropriate for age, moving all four extremities, interactive with mother.",
+  "groundTruth": {
+    "code": "99283",
+    "codeAlternates": ["99282", "99284"],
+    "overallMDM": ["low", "moderate"],
+    "axes": {
+      "problems": ["low", "moderate"],
+      "data": ["straightforward", "low"],
+      "risk": ["moderate"]
+    },
+    "requiredGapMentions": [
+      ["return precaution", "return to", "hydration", "fluid intake", "worsening", "discharge instruction", "red flag", "when to return", "antibiotic counseling", "amoxicillin dose", "warning sign"]
+    ],
+    "forbiddenRationaleSubstrings": [
+      "tylenol is prescription drug management",
+      "acetaminophen is prescription drug management",
+      "sepsis workup not documented",
+      "blood culture not documented",
+      "lumbar puncture"
+    ],
+    "notes": "AOM diagnosed clinically in well-appearing 2yo with localizing source for fever. Amoxicillin Rx = real Rx drug management → moderate risk. Data is minimal (clinical dx, no labs needed for well-appearing child >24mo with clear source). Risk axis should be moderate via amoxicillin Rx. Robin should NOT over-trigger pediatric fever workup gaps (no need for sepsis workup / LP / blood cx in this presentation). Hydration assessment + return precautions are the legitimate peds-specific gaps."
+  }
+}

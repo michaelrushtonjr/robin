@@ -1,0 +1,27 @@
+{
+  "id": "01-abd-pain",
+  "description": "Young F, 2d abd pain, OCP, workup pending",
+  "chiefComplaint": "Abdominal pain",
+  "disposition": null,
+  "transcript": "Dr. Park: Hi, I'm Dr. Park. What brings you in?\nPatient: My stomach has been bothering me for a couple days. It's not terrible but it's not going away.\nDr. Park: Where exactly?\nPatient: Kind of all over. More on this side I guess. The right.\nDr. Park: Upper or lower?\nPatient: In the middle. Maybe a little more up.\nDr. Park: What does it feel like?\nPatient: Crampy. Sometimes it's sharper. Comes and goes.\nDr. Park: Anything make it better or worse?\nPatient: Eating makes it a little worse maybe. I'm not sure.\nDr. Park: Any nausea, vomiting?\nPatient: A little nauseous. Haven't thrown up.\nDr. Park: How are your bowel movements?\nPatient: Normal I think. Maybe a little loose yesterday.\nDr. Park: Any blood in the stool, black stools?\nPatient: No.\nDr. Park: Fever, chills?\nPatient: No.\nDr. Park: Any urinary symptoms, burning, frequency, blood in the urine?\nPatient: No.\nDr. Park: When was your last period?\nPatient: Last week. It was normal.\nDr. Park: Any chance of pregnancy?\nPatient: I'm on the pill. But I guess.\nDr. Park: We'll check. Any prior surgeries, gallbladder, appendix?\nPatient: No, never had surgery.\nDr. Park: Any medical problems, medications?\nPatient: Just the birth control. And Zoloft.\nDr. Park: Anything like this before?\nPatient: I had a stomach bug a few months ago but it wasn't really like this.\nDr. Park: Okay. Let me examine you and we'll get some labs and probably a CT.\n\nPhysical exam (dictated): General: adult female, well-appearing, in mild discomfort, no acute distress. HEENT: mucous membranes moist. Cardiac regular rate and rhythm, no murmurs. Lungs clear bilaterally. Abdomen: soft, non-distended, normoactive bowel sounds, mild tenderness to palpation in the right upper quadrant and epigastrium without rebound or guarding, negative Murphy's sign, no palpable masses, no hepatosplenomegaly, no CVA tenderness bilaterally. Extremities without edema. Skin without rash or jaundice. Neuro alert and oriented, no acute distress.",
+  "groundTruth": {
+    "code": "99284",
+    "codeAlternates": ["99283"],
+    "overallMDM": ["moderate", "low"],
+    "axes": {
+      "problems": ["moderate"],
+      "data": ["low", "moderate"],
+      "risk": ["low", "moderate"]
+    },
+    "requiredGapMentions": [
+      ["pregnancy", "ectopic", "hcg", "beta"]
+    ],
+    "forbiddenRationaleSubstrings": [
+      "birth control is prescription drug management",
+      "zoloft is prescription drug management",
+      "ocp is prescription drug management",
+      "home medication management"
+    ],
+    "notes": "Female of childbearing age on OCP with RUQ-ish abd pain. Pregnancy/ectopic is the medico-legal gap (must flag). Do NOT credit chronic home meds (OCP, Zoloft) as Rx drug management. Workup-in-progress: data/overall accept low or moderate depending on how strictly Robin counts vague 'we'll get some labs' language."
+  }
+}

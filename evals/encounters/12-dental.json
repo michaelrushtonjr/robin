@@ -1,0 +1,29 @@
+{
+  "id": "12-dental",
+  "description": "Adult M, recurrent dental pain, PCN allergic, requesting 'the good stuff'",
+  "chiefComplaint": "Dental pain",
+  "disposition": null,
+  "transcript": "Dr. Park: Hi, I'm Dr. Park. What's going on?\nPatient: My tooth. I've been to this ER three times now. Nobody does anything.\nDr. Park: I'm sorry to hear that. When did this start?\nPatient: Like a month ago. It comes and goes. Right now it's really bad.\nDr. Park: Which tooth?\nPatient: This one, back here on the bottom. I can't chew on this side.\nDr. Park: Any swelling in your face, fever, trouble swallowing, trouble opening your mouth?\nPatient: No. I can open fine. My cheek feels a little puffy maybe but that could be in my head.\nDr. Park: Have you seen a dentist?\nPatient: I can't afford a dentist. That's why I keep coming here. They gave me antibiotics once and it helped for a little while and then it came back.\nDr. Park: Any medical problems?\nPatient: No.\nDr. Park: Any allergies?\nPatient: Penicillin. It gives me hives.\nDr. Park: Taking anything for the pain?\nPatient: Ibuprofen. Tylenol. It's not doing anything. Last time I was here they gave me something stronger and it actually helped.\nDr. Park: What did they give you?\nPatient: I don't remember the name. The good stuff.\nDr. Park: Let me take a look and we'll figure out the best plan.\n\nPhysical exam (dictated): General: adult male, uncomfortable, no acute distress. HEENT: no facial asymmetry, mild tenderness to palpation over the left mandible, no fluctuance, no overlying erythema. Oral exam: mouth opens fully without trismus, left lower molar with obvious dental caries, significant decay visible, mild gingival erythema surrounding, no fluctuant abscess appreciated, no sublingual swelling, floor of mouth soft and non-tender, tongue midline, no uvular deviation, oropharynx without exudate. Neck supple, no lymphadenopathy, no swelling. Cardiac regular. Lungs clear. Skin without rash. Neuro intact.",
+  "groundTruth": {
+    "code": "99282",
+    "codeAlternates": ["99283"],
+    "overallMDM": ["low", "straightforward"],
+    "axes": {
+      "problems": ["low"],
+      "data": ["straightforward"],
+      "risk": ["low", "straightforward", "moderate"]
+    },
+    "requiredGapMentions": [
+      ["dental referral", "follow-up", "dental follow", "outpatient dental", "dental clinic"]
+    ],
+    "forbiddenRationaleSubstrings": [
+      "drug-seeking",
+      "drug seeking",
+      "patient is seeking",
+      "addiction",
+      "abuse history",
+      "ibuprofen is prescription drug management"
+    ],
+    "notes": "Recurrent dental pain with caries, no Ludwig's red flags (verbally cleared on exam: no trismus, no sublingual swelling, no airway concern). Drug-seeking nuance present but Robin's job is documentation, not addiction commentary — TONE TEST: clinical colleague, not compliance officer. Top gap: outpatient dental referral pathway (patient cannot afford private dentist). Risk axis depends on whether antibiotic Rx written (PCN allergy → clinda/doxy = real Rx mgmt = moderate)."
+  }
+}

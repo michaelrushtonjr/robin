@@ -1,0 +1,27 @@
+{
+  "id": "13-ankle-sprain",
+  "description": "Adult M, lateral ankle sprain running, can bear weight, Ottawa negative on exam",
+  "chiefComplaint": "Ankle injury",
+  "disposition": null,
+  "transcript": "Dr. Park: Hi, Dr. Park. What happened?\nPatient: Rolled my ankle running. This morning.\nDr. Park: Which one?\nPatient: Left.\nDr. Park: Could you keep running?\nPatient: No. Walked home. About a mile.\nDr. Park: Any other injuries? Hit anything else?\nPatient: No.\nDr. Park: Medical problems, meds, allergies?\nPatient: None. None. None.\nDr. Park: Tetanus up to date?\nPatient: Yeah, two years ago.\nDr. Park: Great. Let me take a look.\n\nPhysical exam (dictated): General: adult male, well-appearing, no distress. Left ankle: mild swelling over the lateral malleolus, no ecchymosis, tenderness over the anterior talofibular ligament, no tenderness over the posterior edge of either malleolus, no tenderness at the base of the fifth metatarsal, no tenderness over the navicular, mid-fibula non-tender. Able to bear weight, ambulates four steps with mild limp. Range of motion of the ankle mildly limited by pain. Distal pulses intact, sensation intact, capillary refill brisk. Knee and hip non-tender with full range of motion. Skin intact.",
+  "groundTruth": {
+    "code": "99282",
+    "codeAlternates": ["99281", "99283"],
+    "overallMDM": ["straightforward", "low"],
+    "axes": {
+      "problems": ["low", "straightforward"],
+      "data": ["straightforward"],
+      "risk": ["straightforward", "low"]
+    },
+    "requiredGapMentions": [
+      ["ottawa", "return precaution", "return to", "rice", "ice elevation"]
+    ],
+    "forbiddenRationaleSubstrings": [
+      "tetanus is prescription drug management",
+      "ibuprofen is prescription drug management",
+      "imaging recommended",
+      "x-ray needed"
+    ],
+    "notes": "Textbook acute uncomplicated ankle sprain. Ottawa rules NEGATIVE per exam (no malleolar tenderness, no fifth metatarsal/navicular tenderness, can bear weight). The exam itself implements the rule but doesn't NAME it — Robin should flag that. No imaging needed. Floor case: tests whether Robin will go below 99282. 99281 is technically defensible; 99282 is clinical convention. Both accepted."
+  }
+}

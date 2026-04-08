@@ -126,6 +126,7 @@ E&M billing reconciliation, mid-shift audits, and post-discharge voice callbacks
     deepgram.ts                   ← WebSocket factory, config, types
     robinPersona.ts               ← ROBIN_IDENTITY + buildRobinContext() + translatePreferences()
     robinSystemPrompt.ts          ← System prompt for note generation
+    robinThink.ts                 ← runRobinThink() — pure function, full MDM audit pipeline (system prompt, tools, Claude loop, deriveOverallMDM guardrail). Imported by /api/robin-think and /evals.
     robinTypes.ts                 ← RobinInsight, RobinAuditState, RobinPreferences, EncounterNote, MDM types
     mdmScoring.ts                 ← Pure MDM scoring functions: deriveOverallMDM, getNextCode, RVU_MAP
     /supabase
@@ -141,6 +142,10 @@ E&M billing reconciliation, mid-shift audits, and post-discharge voice callbacks
 /docs
   agent-roster.md                 ← Full agent definitions
   robin-agentic-spec.md           ← Master agentic capability spec (Layers 1–3, Note Dashboard, Living Note)
+/evals
+  /encounters/*.json              ← Encounter fixtures with ground truth (code, axes, required gaps, forbidden rationales)
+  rubric.ts                       ← scoreEncounter() — assertion engine + pretty printer
+  runEvals.ts                     ← `npx tsx evals/runEvals.ts [filter]` — runs runRobinThink() directly with temperature: 0
 ```
 
 ---
@@ -220,13 +225,14 @@ E&M billing reconciliation, mid-shift audits, and post-discharge voice callbacks
 ## API Routes — Current Status
 
 ### `/api/robin-think` (SSE POST) — ✅ COMPLETE
-Full MDM audit engine. Streams events as they fire.
+Thin SSE wrapper around `runRobinThink()` (in `src/lib/robinThink.ts`). The route handles auth, body parsing, `buildRobinContext()`, SSE encoding, and the `encounters.mdm_data` persist on `ready`. All clinical logic — system prompt, tool definitions, Claude tool-use loop, `deriveOverallMDM` guardrail — lives in the lib so it can also be called directly by `/evals/runEvals.ts`.
 
 **Tools (in order):** `hpi_completeness` → `mdm_complexity_assessment` → `note_gap` (0–4×) → `em_assessment` → `ready`
 **SSE events:** `hpi_completeness` | `mdm_scaffold` | `note_gap` | `em_assessment` | `ready` | `done` | `error`
 **AMA 2021:** Server-side `deriveOverallMDM()` validates model's MDM scoring (2-of-3 rule, cannot be overridden)
 **Context:** Full shift memory + physician profile via `buildRobinContext()`
 **Persists:** `encounters.mdm_data` written on `ready`
+**Eval mode:** Set request header `x-robin-eval: 1` (or pass `evalMode: true` directly to `runRobinThink`) to pin Anthropic temperature to 0 for deterministic eval runs.
 **Body:** `{ transcript, chiefComplaint, disposition?, encounterId, shiftId }`
 
 ### `/api/robin-chat` (streaming POST) — ✅ COMPLETE
@@ -449,10 +455,13 @@ the SESSIONS.md entry is short — but it still exists.
 5. ~~**Layer 1 — Ambient Command**~~ ✅ Done — `/api/agent/act`, `robin_actions` audit table, toast + confirm card, useShiftAmbient wiring
 6. ~~**Note Dashboard**~~ ✅ Done — EncounterNote types, 3 API routes, `/shift/notes` + `/shift/notes/[id]`, badges, edit, finalize, copy
 7. ~~**Layer 3 — Dashboard & Chart Agency**~~ ✅ Done — state machine, 16 command types, procedure Q&A, undo, passive consult detection, disambiguation + batch PE cards
-8. **AudioWorklet migration** — replace deprecated `ScriptProcessorNode` (TD-001)
-9. **BAAs** — all five vendors
-10. **Wizard of Oz validation** — Rode mic + Voice Memos + manual Claude run
-11. **First trial shift**
+8. ~~**`runRobinThink` extraction + eval harness**~~ ✅ Done — pure function in `src/lib/robinThink.ts`, `/evals` harness with 3 fixtures, temperature: 0 deterministic mode
+9. ~~**Fix `robin-think` clinical coding rules**~~ ✅ Done — added critical care (99291/99292) section, tightened Rx drug mgmt definition (excludes chronic home meds, excludes OTC), added explicit data point counting with worked example, added encounter-specific gap rules (pregnancy/ectopic on female + abd pain, ACS on chest pain, etc.), fixed HPI threshold (score≥4 = extended). Regression: 3/3 fixtures pass deterministically at temp 0.
+10. **AudioWorklet migration** — replace deprecated `ScriptProcessorNode` (TD-001)
+11. **BAAs** — all five vendors
+12. ~~**Expand WoZ corpus**~~ ✅ Done — full 13-encounter regression suite, all passing deterministic-with-drift-tolerance at temp 0. Covers: abd pain workup, septic shock, mech LBP, STEMI, stroke+TNK, PE (over-trigger guard), peds OM, elderly mets, ACE-I rash, panic/PE differential, intoxicated head trauma, dental, ankle sprain
+13. ~~**Wizard of Oz validation**~~ ✅ Rounds 1–3 done — 13/13 passing; CC fix proven on STEMI + stroke + septic shock; over-trigger guard proven on PE; peds rules don't over-fire; tone test passed on dental drug-seeking nuance; `vague_workup_language` gap added
+14. **First trial shift**
 
 ---
 

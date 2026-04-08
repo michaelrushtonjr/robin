@@ -1,0 +1,29 @@
+{
+  "id": "06-pe",
+  "description": "Adult M, pleuritic chest pain + DVT signs + travel — PE workup, NOT critical care",
+  "chiefComplaint": "Shortness of breath, possible PE",
+  "disposition": "Pending CT-PE",
+  "transcript": "Dr. Nguyen: Hi, I'm Dr. Nguyen. What's going on?\nPatient: I feel short of breath. It started yesterday. I thought it would go away.\nDr. Nguyen: With any activity, or at rest too?\nPatient: At rest kind of. Worse when I walk.\nDr. Nguyen: Any chest pain?\nPatient: A little. When I take a deep breath. Right here on the side.\nDr. Nguyen: Which side?\nPatient: Right.\nDr. Nguyen: Any cough, fever?\nPatient: No fever. Maybe a little cough. No phlegm.\nDr. Nguyen: Any leg swelling, pain?\nPatient: My left leg has been kind of sore for a few days. I figured I pulled something.\nDr. Nguyen: Any recent travel, long car rides, surgery, hospitalization?\nPatient: I drove back from Utah last week. Took me like ten hours.\nDr. Nguyen: Any history of blood clots, family history of clots?\nPatient: My mom had a clot in her lung after surgery. She was fine.\nDr. Nguyen: Any cancer history?\nPatient: No.\nDr. Nguyen: Any medical problems, medications?\nPatient: High blood pressure. Lisinopril. That's it.\nDr. Nguyen: Smoker?\nPatient: I quit five years ago.\nDr. Nguyen: Any recent injuries to the leg?\nPatient: No.\n\nPhysical exam (dictated): General: adult male, mildly uncomfortable, slightly tachypneic at rest, speaking in full sentences. HEENT unremarkable. Neck supple, no JVD. Cardiac tachycardic at approximately 105, regular, no murmurs, no right-sided heave appreciated. Lungs clear to auscultation bilaterally, no wheezing, no rales, no focal findings. Chest wall non-tender. Abdomen soft, non-tender. Extremities: left calf with asymmetric swelling compared to the right, approximately two centimeters larger in circumference by visual estimate, mild tenderness to palpation of the left calf, no erythema, Homan's sign positive on the left, distal pulses intact bilaterally. Right lower extremity unremarkable. Skin without rash. Neuro alert and oriented, no focal deficits.",
+  "groundTruth": {
+    "code": "99284",
+    "codeAlternates": ["99285"],
+    "overallMDM": ["moderate", "high"],
+    "axes": {
+      "problems": ["moderate", "high"],
+      "data": ["straightforward", "low", "moderate", "high"],
+      "risk": ["moderate", "high"]
+    },
+    "requiredGapMentions": [
+      ["vague workup", "name the tests", "specific tests", "specific labs", "name the specific", "named tests"]
+    ],
+    "forbiddenRationaleSubstrings": [
+      "critical care time not documented",
+      "cc time not documented",
+      "supported_code: 99291",
+      "supports 99291",
+      "should be 99291",
+      "this is critical care"
+    ],
+    "notes": "OVER-TRIGGER GUARD. Pleuritic chest pain + unilateral calf swelling + travel + family hx PE — high pretest probability for PE. HR 105, mildly tachypneic but speaking in full sentences, no hypotension, no hypoxia mentioned, no shock. This is high-acuity but NOT critical care. Robin must NOT flag CC time or score this as 99291. Code is 99284 (or 99285 if anticoag started + admission). Demonstrates that the new CC trigger rules don't over-fire on every concerning case. Data axis is permissive (sf/low/mod/high) because the transcript doesn't actually document any orders — workup is implied but not stated."
+  }
+}

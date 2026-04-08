@@ -1,0 +1,26 @@
+{
+  "id": "04-stemi",
+  "description": "58M anterior STEMI, cath lab activated, brief ED stabilization",
+  "chiefComplaint": "Chest pain, anterior STEMI",
+  "disposition": "Cath lab",
+  "transcript": "Charge: Dr. Nguyen, EMS is calling in, possible STEMI, ETA four minutes, 58-year-old male, substernal chest pain, EKG transmitted, they're saying anterior ST elevations.\nDr. Nguyen: Pull it up. Yeah, that's a STEMI. Activate the cath lab. I want the room ready, aspirin on board if they haven't given it, get me heparin drawn up, and let's have the crash cart at the bedside.\n\nDr. Nguyen: Sir, I'm Dr. Nguyen, you're having a heart attack, we've already called the cardiology team, they're going to take you upstairs to open up the artery. Can you tell me when the pain started?\nPatient: I was... mowing the lawn. Maybe forty-five minutes ago. It came on hard.\nDr. Nguyen: Is the pain still there?\nPatient: Yeah. It's a little better with whatever they gave me.\nDr. Nguyen: Any pain radiating to the arm, jaw, back?\nPatient: My left arm. And my jaw, yeah.\nDr. Nguyen: Short of breath?\nPatient: Yeah.\nDr. Nguyen: Any prior heart problems?\nPatient: No. Never.\nDr. Nguyen: Any medical problems at all?\nPatient: High cholesterol. I don't take anything for it. I was supposed to.\nDr. Nguyen: Smoker?\nPatient: Yeah. Pack a day. Thirty years.\nDr. Nguyen: Any allergies?\nPatient: No.\nDr. Nguyen: Any blood thinners, aspirin today?\nPatient: EMS gave me aspirin.\nDr. Nguyen: Good.\nCharge: Cath lab is ready, they want him up now.\nDr. Nguyen: Let's go. I'll dictate after.\n\nPhysical exam (dictated): General: middle-aged male, diaphoretic, pale, in moderate distress, clutching his chest. HEENT: pupils equal and reactive, mucous membranes moist. Neck supple, no JVD, no carotid bruits. Cardiac tachycardic, regular, no murmurs, rubs, or gallops, no S3. Lungs clear to auscultation bilaterally, no rales. Abdomen soft, non-tender. Extremities: cool, mildly diaphoretic, distal pulses 2+ and symmetric bilaterally, radial, femoral, dorsalis pedis. No edema. Skin diaphoretic, no rashes. Neuro alert and oriented times three, no focal deficits, moves all four extremities.",
+  "groundTruth": {
+    "code": "99291",
+    "codeAlternates": ["99285"],
+    "overallMDM": ["high"],
+    "axes": {
+      "problems": ["high"],
+      "data": ["low", "moderate", "high"],
+      "risk": ["high"]
+    },
+    "requiredGapMentions": [
+      ["critical care time", "cc time", "30 min", "critical care minutes"]
+    ],
+    "forbiddenRationaleSubstrings": [
+      "data review to push toward 99291",
+      "data review to reach 99291",
+      "mdm data to 99291"
+    ],
+    "notes": "Anterior STEMI with cath lab activation while patient in ED. Brief stabilization (ASA, heparin, EKG indep interp, EMS handoff). 99291 if CC time documented. CC time gap is the must-flag. Code alternate 99285 for cases where ED time is brief. Data axis accepts low because the transcript only documents EKG indep interp (Cat 2) + cath lab discussion (Cat 3) = 2 elements = strictly low per AMA. A real coder reading only this transcript would also score this as low — moderate would require explicit troponin/CXR documentation."
+  }
+}

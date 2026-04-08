@@ -1,0 +1,27 @@
+{
+  "id": "09-ace-rash",
+  "description": "Elderly F, bilateral arm rash, recently started new BP med (likely ACE-I)",
+  "chiefComplaint": "Rash",
+  "disposition": null,
+  "transcript": "Dr. Alvarez: Hi hon, I'm Dr. Alvarez. What's going on today?\nPatient: Well, I don't even know if I should be here, my neighbor told me I should come in, she's a nurse, well, she was a nurse, she's retired now, she worked at Cedars for thirty years if you can believe it, anyway, I've had this rash.\nDr. Alvarez: Where's the rash?\nPatient: On my arm. Well, both arms now. It started on the one and then it went to the other. I thought it was from the garden, I was pulling weeds Saturday, but then I remembered I wore gloves, the good ones, the ones my daughter got me from that place in Pasadena.\nDr. Alvarez: Is it itchy?\nPatient: Oh, terribly. I've been putting that cream on it, the pink stuff —\nDr. Alvarez: Calamine?\nPatient: Yes, that's it. It helps a little. Not really.\nDr. Alvarez: Any new soaps, detergents, lotions?\nPatient: No, I use the same everything for years.\nDr. Alvarez: New medications?\nPatient: They started me on something for my blood pressure last month. I don't remember the name. It starts with an L I think.\nDr. Alvarez: Any trouble breathing, swelling of the lips or tongue, fever?\nPatient: No, nothing like that.\nDr. Alvarez: Anywhere else on the body?\nPatient: A little on my belly. Not much.\nDr. Alvarez: Let me take a look.\n\nPhysical exam (dictated): General: elderly female, well-appearing, in no distress, pleasant and conversant. HEENT: no facial swelling, no oral lesions, no tongue swelling. Skin: erythematous, slightly raised, blanching rash with small papules scattered over the bilateral volar forearms extending to the antecubital fossae, a few similar lesions over the lower abdomen, no vesicles, no bullae, no target lesions, no mucosal involvement, no petechiae. No lymphadenopathy. Cardiac regular. Lungs clear. Abdomen soft, non-tender. No wheezing, no stridor.",
+  "groundTruth": {
+    "code": "99283",
+    "codeAlternates": ["99282", "99284"],
+    "overallMDM": ["low", "moderate"],
+    "axes": {
+      "problems": ["low", "moderate"],
+      "data": ["straightforward", "low"],
+      "risk": ["low", "moderate"]
+    },
+    "requiredGapMentions": [
+      ["medication name", "specific medication", "blood pressure med", "ace inhibitor", "lisinopril", "identify the medication"]
+    ],
+    "forbiddenRationaleSubstrings": [
+      "calamine is prescription drug management",
+      "calamine prescribed",
+      "calamine is rx",
+      "anaphylaxis present"
+    ],
+    "notes": "Likely ACE-I-induced drug eruption (the BP med 'starts with L'). Anaphylaxis red flags verbally cleared (no airway/lip/tongue/breathing). Risk axis depends on whether physician stops the ACE-I (= adjusting existing Rx = moderate) or just gives OTC antihistamine (= low). Top gap: identify the actual medication name — that's the diagnosis itself, currently undocumented."
+  }
+}

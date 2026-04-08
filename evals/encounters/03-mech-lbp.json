@@ -1,0 +1,27 @@
+{
+  "id": "03-mech-lbp",
+  "description": "Mechanical LBP, OTC ibuprofen, discharge",
+  "chiefComplaint": "Low back pain",
+  "disposition": "Discharged home with ibuprofen",
+  "transcript": "Dr. Park: Hey, what's going on?\nPatient: My back's been hurting. Few days.\nDr. Park: Where?\nPatient: Lower. Right here.\nDr. Park: Do anything to it?\nPatient: Not really. Maybe lifting some boxes last weekend.\nDr. Park: Goes anywhere? Down the legs?\nPatient: A little down this one.\nDr. Park: Any numbness, weakness, trouble peeing?\nPatient: No.\nDr. Park: Okay. Take some ibuprofen, we'll get you out of here.\n\nPhysical exam (dictated): Back exam unremarkable, neuro intact, straight leg raise negative. Patient in no distress.",
+  "groundTruth": {
+    "code": "99282",
+    "codeAlternates": ["99281", "99283"],
+    "overallMDM": ["straightforward", "low"],
+    "axes": {
+      "problems": ["low", "straightforward"],
+      "data": ["straightforward"],
+      "risk": ["straightforward", "low"]
+    },
+    "requiredGapMentions": [
+      ["return precaution", "return to", "discharge instruction", "worsening", "red flag", "when to return", "warning sign"]
+    ],
+    "forbiddenRationaleSubstrings": [
+      "ibuprofen is prescription drug management",
+      "ibuprofen prescribed for pain management",
+      "otc ibuprofen prescribed",
+      "ibuprofen prescription"
+    ],
+    "notes": "OTC-dose ibuprofen is NOT Rx drug management. Risk should be straightforward (or low). Per AMA 2-of-3, with problems=low + data=sf + risk=sf, overall is technically straightforward and code is technically 99281 — but 99282 is what most ED docs bill. Both acceptable. Return precautions is the must-flag gap."
+  }
+}

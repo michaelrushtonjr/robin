@@ -1,0 +1,29 @@
+{
+  "id": "10-panic-pe-diff",
+  "description": "44F chest tightness, palpitations, OCP + Adderall + recent flight + family hx MI — broad differential",
+  "chiefComplaint": "Palpitations and chest tightness",
+  "disposition": null,
+  "transcript": "Dr. Alvarez: Hi, I'm Dr. Alvarez. What brings you in today?\nPatient: It's a lot of things. I don't even know where to start.\nDr. Alvarez: Start wherever makes sense.\nPatient: Okay, so, I've been feeling off for a long time. Like months. But today I felt like my heart was going to explode out of my chest, and I got scared, because my mom died of a heart attack, she was 61, I'm 44, and I know that's young but it runs in my family.\nDr. Alvarez: When did your heart feel that way today?\nPatient: This morning. Like eight? I was at work. I had to leave. My boss is going to be furious, he's already been on me about —\nDr. Alvarez: Is it happening right now?\nPatient: Sort of. It's better. It comes in waves.\nDr. Alvarez: Any chest pain with it?\nPatient: Not really pain. Tightness. Like a band. I had a panic attack once in college and it felt similar but it wasn't this bad.\nDr. Alvarez: Short of breath?\nPatient: Yes, I keep feeling like I can't get a full breath in. I yawn a lot.\nDr. Alvarez: Any tingling in your hands, around your mouth?\nPatient: Yes! In my fingers. Is that bad?\nDr. Alvarez: It can happen when you breathe fast. Any sweating, nausea, dizziness?\nPatient: All of it. I feel awful.\nDr. Alvarez: Any fevers, coughing, calf pain, recent travel?\nPatient: No. Well, I flew to Phoenix two weeks ago for my sister's thing but that's not that far.\nDr. Alvarez: Any history of blood clots, on birth control, any reason you'd be at risk for a clot?\nPatient: I'm on the pill. I've been on it forever.\nDr. Alvarez: Any smoking?\nPatient: I vape. Sometimes.\nDr. Alvarez: Any thyroid problems, caffeine, stimulants, ADHD medications?\nPatient: I drink a lot of coffee. Like a lot. And I take Adderall. My friend gives me hers sometimes because I can't afford to see the psychiatrist since my insurance changed.\nDr. Alvarez: How much today?\nPatient: One this morning. 20 milligrams.\nDr. Alvarez: Any other medical problems?\nPatient: Anxiety. Depression. I was in the hospital once in my twenties, psych hospital, but not since.\nDr. Alvarez: Any thoughts of hurting yourself today?\nPatient: No, no, nothing like that. I just want to feel normal.\nDr. Alvarez: Okay. We're going to check an EKG, some labs, make sure nothing dangerous is going on, and go from there.\n[Dr. Alvarez is then called away by charge nurse to manage a separate situation; encounter is incomplete at this point]\n\nPhysical exam (dictated): General: adult female, anxious appearing, tearful intermittently, in no acute distress, speaking in full sentences. HEENT: pupils equal, round, reactive, possibly mildly dilated, mucous membranes moist. Neck supple, no thyromegaly, no lymphadenopathy, no JVD. Cardiac tachycardic at approximately 115, regular, no murmurs. Lungs clear bilaterally, no wheezing, respiratory rate mildly elevated. Abdomen soft, non-tender. Extremities: no calf tenderness, no edema, Homan's negative, distal pulses intact. Skin mildly diaphoretic, no rash. Neuro alert and oriented times three, tremulous, no focal deficits.",
+  "groundTruth": {
+    "code": "99284",
+    "codeAlternates": ["99285", "Not billable", "Currently unbillable", "Incomplete", "Incomplete encounter"],
+    "overallMDM": ["low", "moderate", "high"],
+    "axes": {
+      "problems": ["moderate", "high"],
+      "data": ["low", "moderate"],
+      "risk": ["low", "moderate", "high"]
+    },
+    "requiredGapMentions": [
+      ["pulmonary embolism", "pe ", "wells", "perc", "d-dimer", "ct-pe", "ct pe", "acs", "cardiac risk stratification", "acs risk stratification", "heart score", "differential not documented", "broad differential"]
+    ],
+    "forbiddenRationaleSubstrings": [
+      "critical care time not documented",
+      "supports 99291",
+      "should be 99291",
+      "this is critical care",
+      "panic attack confirmed",
+      "purely psychiatric"
+    ],
+    "notes": "Multiple competing diagnoses: panic attack, PE (OCP + recent flight + tachycardia), thyrotoxicosis, sympathomimetic toxicity (Adderall + caffeine), ACS (family hx). Robin should flag the broad differential — at minimum the PE workup. NOT critical care (HR 115 but speaking in full sentences, no hemodynamic instability, no hypoxia). Encounter is incomplete (physician pulled away) — disposition undocumented. Robin should NOT collapse this to 'just anxiety.'"
+  }
+}

@@ -1,0 +1,42 @@
+{
+  "id": "11-intox-head-trauma",
+  "description": "Intoxicated middle-aged M, forehead lac, on warfarin, GCS 14, c-collar, CT head pending",
+  "chiefComplaint": "Head injury, intoxicated, on anticoagulation",
+  "disposition": "Pending CT head, observation",
+  "transcript": "Dr. Alvarez: Sir. Sir. I'm Dr. Alvarez, can you look at me?\nPatient: Whaaat. What do you want.\nDr. Alvarez: I want to figure out what happened to you tonight. Can you tell me what happened?\nPatient: Nothing happened. I'm fine. I wanna go home.\nDr. Alvarez: You have a pretty big cut on your forehead and EMS said you were found on the sidewalk. Do you remember falling?\nPatient: I didn't fall. I was walking.\nDr. Alvarez: Did you hit your head?\nPatient: Maybe. I don't know. What time is it?\nDr. Alvarez: It's almost midnight. How much did you have to drink tonight?\nPatient: Couple beers.\nDr. Alvarez: Just a couple?\nPatient: Maybe more.\nDr. Alvarez: Any other drugs?\nPatient: No. No drugs.\nDr. Alvarez: Any medical problems?\nPatient: I'm fine. Just let me go.\nDr. Alvarez: Do you take any medications?\nPatient: [no response]\nDr. Alvarez: Sir, stay with me. Do you take blood thinners?\nPatient: I don't know.\nDr. Alvarez: Any allergies?\nPatient: [no response]\nNurse: Dr. Alvarez, his wallet has a VA card and a list of medications in it, I'm writing them down now. He's on warfarin. And metoprolol, lisinopril, and Lipitor.\nDr. Alvarez: Warfarin. Great. Let's get a CT head and an INR, and get him in a collar until we can clear his neck. He's not reliable for an exam right now.\nNurse: On it.\nDr. Alvarez: Sir, I'm going to have to keep you here for a little while, we need to make sure there's no bleeding in your brain.\nPatient: Whatever.\n\nPhysical exam (dictated): General: middle-aged male, disheveled, odor of alcohol, somnolent but arousable to voice, uncooperative with exam. HEENT: approximately four centimeter laceration to the left forehead with dried blood, edges irregular, no obvious foreign body, no active bleeding, underlying bony step-off not appreciated, no Battle's sign, no raccoon eyes, no hemotympanum, pupils equal and reactive at 3 millimeters. Neck: in cervical collar, unable to clinically clear given intoxication, no obvious deformity. Cardiac regular rate and rhythm. Lungs clear. Abdomen soft, non-tender to palpation, patient without grimace. Extremities: abrasions to the bilateral palms and left knee, no obvious deformities, distal pulses intact, moves all four extremities spontaneously. Skin: multiple superficial abrasions as noted, no other concerning findings. Neuro: GCS 14, eyes open to voice, confused verbal, obeys commands intermittently, no obvious focal deficits, moves all extremities.",
+  "groundTruth": {
+    "code": "99284",
+    "codeAlternates": ["99285"],
+    "overallMDM": ["moderate", "high"],
+    "axes": {
+      "problems": ["moderate", "high"],
+      "data": ["low", "moderate"],
+      "risk": ["high", "moderate"]
+    },
+    "requiredGapMentions": [
+      [
+        "anticoagulation",
+        "anticoag",
+        "bleeding risk",
+        "inr value",
+        "inr result",
+        "warfarin",
+        "nexus",
+        "canadian ct head",
+        "decision rule",
+        "c-spine",
+        "cervical spine",
+        "neck clearance",
+        "delayed bleed",
+        "observation"
+      ]
+    ],
+    "forbiddenRationaleSubstrings": [
+      "critical care time not documented",
+      "supports 99291",
+      "warfarin is patient's home medication and not relevant",
+      "ibuprofen prescribed"
+    ],
+    "notes": "Anticoagulated head trauma in intoxicated patient — high risk for delayed/occult ICH. Risk should be HIGH (drug therapy with intensive monitoring implications + potential hospitalization for high-acuity condition). Specific data points named (CT head, INR) so data should be at least low. NOT critical care (GCS 14, no instability, no active resuscitation). Top gaps: C-spine clearance plan, anticoag reversal contingency, safe disposition planning."
+  }
+}

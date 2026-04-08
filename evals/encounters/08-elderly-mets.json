@@ -1,0 +1,29 @@
+{
+  "id": "08-elderly-mets",
+  "description": "Elderly M cachectic, weight loss, supraclav node, prostate nodule, hematuria, melanoma hx",
+  "chiefComplaint": "Generalized weakness, weight loss",
+  "disposition": "Admission for workup",
+  "transcript": "Dr. Alvarez: Hi, I'm Dr. Alvarez. What brings you in today, sir?\nPatient: My wife made me come. I'm fine, really.\nWife: He's not fine. He almost fell twice this morning. He's been weak for a week, he won't eat, he's been sleeping all day.\nDr. Alvarez: Any specific pain anywhere?\nPatient: No.\nWife: His back has been bothering him.\nPatient: It's just old age.\nDr. Alvarez: Where in your back?\nPatient: Lower. Middle. It's nothing.\nDr. Alvarez: Any fever, chills, sweats?\nWife: He had night sweats last week. I had to change the sheets.\nPatient: It was hot in the room.\nDr. Alvarez: Any weight loss?\nWife: Yes. His pants are falling off him. I don't know how much, he won't get on the scale.\nDr. Alvarez: Any cough, shortness of breath?\nPatient: No.\nWife: A little cough. He's been clearing his throat a lot.\nDr. Alvarez: Any changes in bowel or bladder habits?\nPatient: No.\nWife: He's been constipated.\n[interruption: charge nurse calls Dr. Alvarez away to manage a different patient with critical hyperkalemia in room 8 — Dr. Alvarez gives orders for that patient and returns]\nDr. Alvarez: Sorry about that. Any urinary symptoms, blood in the urine?\nPatient: Sometimes it's a little pink maybe. I don't know.\nDr. Alvarez: How long has that been?\nPatient: I don't know. A while.\nWife: He never tells me these things.\nDr. Alvarez: Any history of cancer?\nPatient: No.\nDr. Alvarez: Any smoking?\nPatient: I smoked for forty years. Quit ten years ago.\nDr. Alvarez: What medical problems do you have?\nPatient: High blood pressure. Prostate's big. That's it.\nWife: He had a spot on his skin removed last year.\nDr. Alvarez: What kind of spot?\nWife: They said it was the bad kind. Melanoma.\nPatient: They got it all.\nDr. Alvarez: Any follow-up, scans?\nWife: He was supposed to see the skin doctor again but he didn't go.\nDr. Alvarez: Okay sir, I'm going to examine you and we're going to get some labs and probably some imaging. There's a few things we need to sort out.\n\nPhysical exam (dictated): General: elderly male, cachectic appearing, thin, pale, fatigued, in no acute distress but clearly ill. HEENT: temporal wasting, mucous membranes dry, no scleral icterus, no oral lesions. Neck supple, no JVD, a small firm left supraclavicular lymph node approximately one centimeter, non-tender. Cardiac regular rate and rhythm, no murmurs. Lungs with decreased breath sounds at the right base, otherwise clear. Abdomen soft, non-tender, no palpable masses, no hepatosplenomegaly appreciated, normoactive bowel sounds. Back: tenderness to palpation over the mid-lumbar spine, no overlying erythema. Rectal: enlarged firm prostate with a hard nodule on the right lobe, brown stool guaiac positive. Extremities: significant muscle wasting, no edema, distal pulses intact. Skin: thin, multiple actinic keratoses, well-healed surgical scar on the left upper back. Neuro: alert and oriented times three, strength 4 out of 5 throughout, symmetric, sensation grossly intact, gait not formally tested given weakness, unsteady on standing per wife.",
+  "groundTruth": {
+    "code": "99285",
+    "codeAlternates": ["99284"],
+    "overallMDM": ["high", "moderate"],
+    "axes": {
+      "problems": ["high"],
+      "data": ["low", "moderate", "high"],
+      "risk": ["high", "moderate"]
+    },
+    "requiredGapMentions": [
+      ["melanoma", "metastatic", "cancer workup", "staging", "oncolog", "malignancy"],
+      ["vague workup", "name the tests", "specific tests", "specific labs", "name the specific", "named tests", "specific imaging"]
+    ],
+    "forbiddenRationaleSubstrings": [
+      "potassium 6.9",
+      "hyperkalemia",
+      "calcium gluconate",
+      "insulin and d50",
+      "dialysis patient"
+    ],
+    "notes": "Multi-system high-MDM case: cachexia, weight loss, supraclav node (Virchow), prostate nodule, hematuria, lumbar back pain, melanoma history without follow-up. Occult metastatic disease until proven otherwise. Multiple gaps compete for 4 slots — Robin should prioritize the cancer/staging workup gap. FORBIDDEN: any reference to the hyperkalemia patient in room 8 (distractor — those data points belong to a DIFFERENT patient and must not appear in this encounter's rationale). Data axis accepts low because the transcript only contains 'we'll get some labs and probably some imaging' without specifics — strict reading scores this as low (only the wife as independent historian counts as a concrete data point)."
+  }
+}
