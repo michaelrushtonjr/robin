@@ -1,0 +1,17 @@
+{
+  "id": "01-heart-trigger",
+  "description": "56M chest pain, smoker, otherwise low risk — classic HEART case",
+  "chiefComplaint": "Chest pain",
+  "transcript": "Dr. Patel: Hi sir, I'm Dr. Patel. What brings you in today?\nPatient: I've been having some chest pain since this morning.\nDr. Patel: Can you tell me about it? When did it start?\nPatient: About six hours ago. Came on while I was at my desk. Kind of a pressure in the middle of my chest.\nDr. Patel: Anything make it better or worse?\nPatient: It comes and goes. It's not really worse with movement.\nDr. Patel: Any radiation to your arm, jaw, back?\nPatient: Maybe a little to my left arm. Hard to tell.\nDr. Patel: Short of breath, sweaty?\nPatient: A little sweaty when it first hit.\nDr. Patel: Any nausea?\nPatient: A little.\nDr. Patel: How old are you?\nPatient: Fifty-six.\nDr. Patel: Any medical problems?\nPatient: I smoke. About a pack a day for thirty years.\nDr. Patel: Blood pressure, cholesterol, diabetes?\nPatient: They told me my cholesterol was borderline last year. No diabetes.\nDr. Patel: Family history of heart disease?\nPatient: My dad had a bypass at sixty-two.\nDr. Patel: Any prior heart issues for you?\nPatient: No.\nDr. Patel to nurse: Let's get an EKG, troponin, CBC, BMP, repeat trop in three hours. Aspirin 324 chewed if no contraindications.",
+  "groundTruth": {
+    "expectedSurfaced": ["HEART"],
+    "forbiddenSurfaced": ["PERC", "SF_Syncope", "NEXUS", "Ottawa_Ankle", "Canadian_CT_Head"],
+    "requiredPreFillKeys": {
+      "HEART": ["age", "risk_factors_count"]
+    },
+    "requiredMissingElements": {
+      "HEART": ["ekg"]
+    },
+    "notes": "Adult chest pain with ACS in differential. Surface HEART. Age and risk factors clearly heard. EKG and troponin pending — should appear in missing_elements."
+  }
+}

@@ -88,6 +88,7 @@ E&M billing reconciliation, mid-shift audits, and post-discharge voice callbacks
       /agent/act/                 ← Ambient command gateway (Layer 1+3: 16 command types, encounter resolution, tier classification)
       /agent/undo/                ← Voice undo — restores previous_state from robin_actions
       /agent/procedure-qa/        ← Procedure Q&A — 5 procedure types, KB-driven question sequences
+      /clinical-surfacing/route.ts ← Loop A — clinical decision tool surfacing (SSE, 6 tools, typed per-tool pre-fill)
       /onboarding-interview/      ← Streaming interview chat for physician onboarding (Layer 2)
       /physician/preferences/     ← Save physician preferences (POST, auth-gated)
       /note/section/              ← PATCH — update a specific note section (conflict detection)
@@ -127,7 +128,8 @@ E&M billing reconciliation, mid-shift audits, and post-discharge voice callbacks
     robinPersona.ts               ← ROBIN_IDENTITY + buildRobinContext() + translatePreferences()
     robinSystemPrompt.ts          ← System prompt for note generation
     robinThink.ts                 ← runRobinThink() — pure function, full MDM audit pipeline (system prompt, tools, Claude loop, deriveOverallMDM guardrail). Imported by /api/robin-think and /evals.
-    robinTypes.ts                 ← RobinInsight, RobinAuditState, RobinPreferences, EncounterNote, MDM types
+    clinicalSurfacing.ts          ← runClinicalSurfacing() — Loop A pure function. 6-tool library with TRIGGER + DO NOT SURFACE rules per tool, typed per-tool pre-fill via coercePreFill(). Imported by /api/clinical-surfacing and /evals/surfacing.
+    robinTypes.ts                 ← RobinInsight, RobinAuditState, RobinPreferences, EncounterNote, MDM types, ClinicalToolName, ClinicalToolSurfacing
     mdmScoring.ts                 ← Pure MDM scoring functions: deriveOverallMDM, getNextCode, RVU_MAP
     /supabase
       client.ts                   ← Browser Supabase client
@@ -146,6 +148,11 @@ E&M billing reconciliation, mid-shift audits, and post-discharge voice callbacks
   /encounters/*.json              ← Encounter fixtures with ground truth (code, axes, required gaps, forbidden rationales)
   rubric.ts                       ← scoreEncounter() — assertion engine + pretty printer
   runEvals.ts                     ← `npx tsx evals/runEvals.ts [filter]` — runs runRobinThink() directly with temperature: 0
+  /surfacing/
+    /fixtures/*.json              ← 18 surfacing fixtures (3 per tool: trigger + over-fire trap + edge case)
+    rubric.ts                     ← scoreSurfacing() — dot-notation pre_fill assertions, substring missing_elements
+    runSurfacingEvals.ts          ← `npx tsx evals/surfacing/runSurfacingEvals.ts [filter]` — 18/18 deterministic at temp 0
+    runOverfireRegression.ts      ← Bonus regression: runs surfacing engine on 13 MDM fixtures, eyeball over-firing
 ```
 
 ---
@@ -223,6 +230,15 @@ E&M billing reconciliation, mid-shift audits, and post-discharge voice callbacks
 ---
 
 ## API Routes — Current Status
+
+### `/api/clinical-surfacing` (SSE POST) — ✅ COMPLETE (engine + UI; live audio wiring deferred)
+Thin SSE wrapper around `runClinicalSurfacing()` (in `src/lib/clinicalSurfacing.ts`). Loop A — clinical decision tool surfacing. Library of 6 tools (HEART, PERC, SF Syncope, Canadian CT Head, Ottawa Ankle, NEXUS). Auth-gated. Per-tool typed pre-fill via server-side `coercePreFill()`. Eval mode opt-in via `x-robin-eval: 1` header.
+
+**Tools:** `surface_clinical_tool` (called 0+ times) → `done_surfacing` (exactly once)
+**SSE events:** `clinical_tool_surfaced` | `surfacing_done` | `error`
+**Body:** `{ transcript, chiefComplaint, encounterId?, shiftId? }`
+**Output payload per surfacing:** `{ tool_name, pre_fill (typed), trigger_rationale, pre_fill_summary, missing_elements[], surface_id (forward-compat with item 19's surfacing_events table), surfaced_at }`
+**Status:** engine 18/18 deterministic at temp 0; over-fire regression on 13 MDM fixtures shows clean discrimination; UI panel renders. Live wiring into `useShiftAmbient` deferred to a separate commit alongside item 19's `surfacing_events` write path.
 
 ### `/api/robin-think` (SSE POST) — ✅ COMPLETE
 Thin SSE wrapper around `runRobinThink()` (in `src/lib/robinThink.ts`). The route handles auth, body parsing, `buildRobinContext()`, SSE encoding, and the `encounters.mdm_data` persist on `ready`. All clinical logic — system prompt, tool definitions, Claude tool-use loop, `deriveOverallMDM` guardrail — lives in the lib so it can also be called directly by `/evals/runEvals.ts`.
@@ -493,7 +509,7 @@ the SESSIONS.md entry is short — but it still exists.
 
 **Active sprint — week of April 13:**
 
-15. **Clinical decision tool surfacing engine** — `src/lib/clinicalSurfacing.ts`, trigger logic for 6 tools (HEART, PERC, SF Syncope, Canadian CT Head, Ottawa Ankle, NEXUS), pre-fill from transcript, surfaces in `RobinInsightsPanel`. New event type in SSE stream: `clinical_tool_surfaced`. Eval fixtures for trigger and non-trigger cases.
+15. ~~**Clinical decision tool surfacing engine**~~ ✅ Engine + UI complete (live audio wiring deferred). `src/lib/clinicalSurfacing.ts`, `/api/clinical-surfacing` SSE route, 6 tools with typed per-tool pre-fill, `RobinInsightsPanel` renders surfacings, 18-fixture eval suite at 18/18 PASS deterministic at temp 0, bonus over-fire regression on 13 MDM fixtures shows clean discrimination. Live audio wiring into `useShiftAmbient` lands with item 19 so engagement tracking is wired from day one.
 16. **Differential expander** — maintain working ddx in encounter state, silently add diagnoses physician hasn't mentioned, render in "consider also" section of insights panel. Can run parallel to #15.
 16.5. **Memory architecture audit + write paths (encounter / shift / longitudinal)** — three tiers exist (`encounters.mdm_data`, `shifts.robin_memory`, `physicians.robin_preferences`) with full read paths but incomplete write paths. `shifts.robin_memory` has no writer at all today. Audit each tier — what's stored, what should be stored, when it's written, when it's read, decay/aggregation rules between tiers — then build the write paths from `robin-think`, clinical surfacing, `agent/act`, and per-shift summaries. Longitudinal memory should accumulate physician-specific patterns over time (chronically missed gap types, coding posture, which surfaced tools engaged vs ignored). Informs items 17, 18, 19. Required before trial shift so memory accumulates real signal during the 9-hour run.
 17. **Documentation completeness tracker** — `src/lib/documentationCompleteness.ts`, per-encounter checklist (PE, EKG, MDM, return precautions, dispo, ROS), surfaces at MDM-dictation-start or end-encounter only.

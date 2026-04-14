@@ -1,0 +1,11 @@
+{
+  "id": "12-cthead-edge-anticoagulated",
+  "description": "78M on warfarin, fall with brief LOC — Canadian CT Head excludes anticoagulated patients",
+  "chiefComplaint": "Fall with head strike",
+  "transcript": "Dr. Carter: What happened today?\nPatient: I tripped on the rug going to the bathroom. Hit my head on the wall.\nDr. Carter: Did you pass out?\nWife: Maybe ten seconds. I was right there. He came around quickly but seemed dazed for a minute.\nDr. Carter: Any vomiting?\nPatient: No.\nDr. Carter: Headache?\nPatient: A little, on the right side where I hit.\nDr. Carter: Are you on any blood thinners?\nPatient: Yes, warfarin. For my atrial fibrillation.\nDr. Carter: When was your last INR?\nPatient: Last week, it was 2.4.\nDr. Carter: Any other medical problems?\nPatient: A-fib, high blood pressure, mild kidney disease.\nNurse: GCS 15, alert and oriented. HR 72 irregular, BP 142/84, sat 97.\nDr. Carter: Pupils equal, no focal deficits. Tender area right temporal scalp, no laceration, no obvious depression. No basal skull signs.\nDr. Carter: He's anticoagulated and had LOC from a fall. The rule we'd use for non-anticoagulated head injury doesn't really apply here — anticoagulation alone is an indication for imaging in this setting. He's getting a CT regardless. Let me get that ordered, send a STAT INR, and have reversal agents ready in case there's a bleed.",
+  "groundTruth": {
+    "expectedSurfaced": [],
+    "forbiddenSurfaced": ["Canadian_CT_Head", "HEART", "PERC", "SF_Syncope", "NEXUS", "Ottawa_Ankle"],
+    "notes": "Canadian CT Head explicitly excludes patients on oral anticoagulants — they need imaging on a separate pathway. Doctor verbally identifies this. Surfacing the rule here would push a tool that the doctor has already correctly excluded. This tests whether the engine respects the rule's own exclusion criteria, not just the trigger criteria."
+  }
+}

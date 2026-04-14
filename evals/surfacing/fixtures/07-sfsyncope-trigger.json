@@ -1,0 +1,14 @@
+{
+  "id": "07-sfsyncope-trigger",
+  "description": "62M syncope at the gym, no clear cause, normal exam — SF Syncope candidate",
+  "chiefComplaint": "Syncope",
+  "transcript": "Dr. Patel: Tell me what happened.\nPatient: I was at the gym, finished a set on the treadmill, walked over to get water, and the next thing I remember I was on the floor with someone standing over me.\nDr. Patel: How long were you out?\nBystander: Maybe twenty seconds. He came right back.\nDr. Patel: Any warning? Lightheaded, sweaty, nausea?\nPatient: Not really. I just felt off and then it went black.\nDr. Patel: Any chest pain, palpitations, shortness of breath before or after?\nPatient: No.\nDr. Patel: Did you hit your head?\nPatient: A little, on my shoulder mostly. Maybe a small bump on the back of my head.\nDr. Patel: Any prior episodes like this?\nPatient: Never.\nDr. Patel: Past medical history?\nPatient: High blood pressure, on lisinopril. That's it.\nDr. Patel: Family history of sudden death, heart disease in young people?\nPatient: My dad had a heart attack at 70, but that's it.\nDr. Patel: Any shortness of breath day to day, leg swelling?\nPatient: No.\nNurse: HR 78, BP 132/82, sat 98, temp normal.\nDr. Patel: EKG looks like normal sinus, no ischemia, normal intervals. Lungs clear. Heart sounds regular, no murmur. No focal neuro findings, alert and oriented.\nDr. Patel: Hematocrit will be back in a few minutes. He looks well now. Let me think about whether we can risk-stratify and dispo or whether this needs admission.",
+  "groundTruth": {
+    "expectedSurfaced": ["SF_Syncope"],
+    "forbiddenSurfaced": ["HEART", "PERC", "NEXUS", "Ottawa_Ankle", "Canadian_CT_Head"],
+    "requiredPreFillKeys": {
+      "SF_Syncope": ["chf_history", "shortness_of_breath", "abnormal_ekg", "sbp_under_90"]
+    },
+    "notes": "Classic SF Syncope use case. True syncope (LOC with spontaneous recovery), no clear benign cause, doctor explicitly weighing dispo decision. CHESS criteria are the right structure. HEART should NOT fire — this is syncope workup, not chest pain workup, and there is no anginal symptom."
+  }
+}

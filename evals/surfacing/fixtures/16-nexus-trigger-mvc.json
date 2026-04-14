@@ -1,0 +1,14 @@
+{
+  "id": "16-nexus-trigger-mvc",
+  "description": "38M low-speed MVC with neck pain, alert, sober — NEXUS candidate",
+  "chiefComplaint": "Neck pain after MVC",
+  "transcript": "Dr. Foster: Tell me what happened.\nPatient: I got rear-ended at a stoplight. The other car was going maybe twenty. My head snapped back.\nDr. Foster: Air bags deploy?\nPatient: No. The car has minor damage.\nDr. Foster: Any loss of consciousness?\nPatient: No.\nDr. Foster: How are you feeling now? Where does it hurt?\nPatient: My neck is sore, mostly in the back. A little stiff. No headache really.\nDr. Foster: Any numbness, tingling, weakness anywhere?\nPatient: No.\nDr. Foster: Any other injuries? Anywhere else hurt?\nPatient: No, just the neck.\nDr. Foster: Any drugs, alcohol today?\nPatient: No, I was on my way to work.\nDr. Foster: How old are you, any medical problems?\nPatient: Thirty-eight. Healthy.\nDr. Foster: Alert, oriented x3, conversing normally. Let me palpate the cervical spine. Any tenderness here, midline? Here? Here?\nPatient: A little tender right in the middle, lower part.\nDr. Foster: Midline at C6 area, mild tenderness. No step-off. Paraspinal muscles also tender bilaterally. Strength 5/5 throughout, sensation intact, reflexes symmetric.\nDr. Foster: He has midline tenderness so we can't clear him by exam alone. Let me think about what imaging he needs.",
+  "groundTruth": {
+    "expectedSurfaced": ["NEXUS"],
+    "forbiddenSurfaced": ["HEART", "PERC", "SF_Syncope", "Ottawa_Ankle", "Canadian_CT_Head"],
+    "requiredPreFillKeys": {
+      "NEXUS": ["midline_c_spine_tenderness", "focal_neuro_deficit", "altered_alertness", "intoxication", "painful_distracting_injury"]
+    },
+    "notes": "Classic NEXUS application. Blunt trauma, doctor walking through the criteria explicitly. He has midline tenderness so the rule actually fails here — but that is exactly the value of surfacing it: it documents the failed criterion and justifies imaging. NEXUS supports the affirmative imaging decision as well as the rule-out."
+  }
+}

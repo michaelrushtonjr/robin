@@ -1,0 +1,11 @@
+{
+  "id": "08-sfsyncope-non-trigger-vasovagal",
+  "description": "24F clear vasovagal faint at blood draw — SF Syncope must NOT fire",
+  "chiefComplaint": "Fainting episode",
+  "transcript": "Dr. Brooks: Hi, what brings you in today?\nPatient: I passed out earlier when I was getting blood drawn at my doctor's office. They sent me here to be checked out.\nDr. Brooks: Walk me through what happened.\nPatient: I always get woozy with needles. The phlebotomist was drawing blood, I started feeling sweaty and hot, my vision tunneled, and I told her I felt like I was going to pass out. She laid me back, but I was already going. I was out for maybe ten seconds.\nDr. Brooks: How did you feel after?\nPatient: Tired and a little nauseous for a few minutes. Then fine. That's actually how it went the last time too.\nDr. Brooks: This has happened before with blood draws?\nPatient: Twice. Same thing each time.\nDr. Brooks: Any chest pain, palpitations, shortness of breath?\nPatient: No, never.\nDr. Brooks: Any family history of sudden death, young people dying suddenly?\nPatient: No.\nDr. Brooks: Past medical history?\nPatient: I'm healthy. Not on any medications.\nNurse: HR 72, BP 118/74, sat 99, temp normal.\nDr. Brooks: EKG is normal. Lungs clear, heart sounds normal. Neuro exam normal.\nDr. Brooks: This is classic vasovagal. Prodrome of warmth, tunneling vision, the trigger is needles, rapid recovery, prior identical episodes. We don't need a workup for this. Hydrate, follow up with your PCP if it happens again outside of needle situations.",
+  "groundTruth": {
+    "expectedSurfaced": [],
+    "forbiddenSurfaced": ["SF_Syncope", "HEART", "PERC", "NEXUS", "Ottawa_Ankle", "Canadian_CT_Head"],
+    "notes": "Classic vasovagal with clear trigger, prodrome, rapid recovery, prior identical episodes. SF Syncope is meant for syncope where the cause is not clear and we are deciding on serious-outcome risk. Here the cause is established and the doctor is dispo'ing without workup. Surfacing the rule is noise."
+  }
+}

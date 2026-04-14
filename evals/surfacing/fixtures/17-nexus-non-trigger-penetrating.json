@@ -1,0 +1,11 @@
+{
+  "id": "17-nexus-non-trigger-penetrating",
+  "description": "27M stab wound to the neck — NEXUS does not apply to penetrating trauma",
+  "chiefComplaint": "Stab wound to neck",
+  "transcript": "Dr. Aziz: Trauma activation, what do we have?\nEMS: Twenty-seven year old male, single stab wound to the right side of the neck, zone 2. Hemodynamically stable in the field. GCS 15. No active bleeding currently, pressure dressing applied.\nDr. Aziz: Sir, can you talk to me? What's your name?\nPatient: Yeah. Marcus.\nDr. Aziz: Any trouble breathing, swallowing?\nPatient: No, it just hurts.\nDr. Aziz: HR 102, BP 128/78, sat 99. Airway patent, voice is normal.\nDr. Aziz: Let me take down the dressing carefully. Single stab wound, lateral neck, zone 2, about two centimeters, no expanding hematoma, no bruit, no thrill, no active bleeding. Trachea midline.\nDr. Aziz: Any neuro deficits? Strength in arms, legs.\nPatient: Everything moves.\nDr. Aziz: This is a penetrating neck injury, zone 2. He needs CT angio of the neck to evaluate vascular and aerodigestive structures. Trauma surgery is at the bedside. We're working him up as penetrating trauma, not blunt.\nDr. Aziz: Get the CT-A neck and chest, type and screen, CBC, BMP, coags. Trauma to the OR if anything looks bad on imaging.",
+  "groundTruth": {
+    "expectedSurfaced": [],
+    "forbiddenSurfaced": ["NEXUS", "HEART", "PERC", "SF_Syncope", "Ottawa_Ankle", "Canadian_CT_Head"],
+    "notes": "NEXUS is for blunt trauma cervical spine clearance. Penetrating neck trauma is a completely different evaluation pathway (CT angiography, surgical evaluation). Surfacing NEXUS would be applying the wrong rule to the wrong mechanism — exactly the kind of confident-but-wrong over-fire we want to prevent."
+  }
+}

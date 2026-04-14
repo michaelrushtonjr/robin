@@ -72,6 +72,7 @@ export default function EncounterPage({
   const [clarificationAnswers, setClarificationAnswers] = useState<ClarificationAnswer[]>([]);
   const [robinAudit, setRobinAudit] = useState<RobinAuditState>({
     gaps: [],
+    surfacedTools: [],
     loading: false,
   });
   const [revalAppended, setRevalAppended] = useState(false);
@@ -185,7 +186,7 @@ export default function EncounterPage({
     setClarificationState("loading");
 
     // Fire robin-think SSE — runs concurrently, does not block clarification fetch
-    setRobinAudit({ gaps: [], loading: true });
+    setRobinAudit({ gaps: [], surfacedTools: [], loading: true });
     (async () => {
       try {
         const res = await fetch("/api/robin-think", {

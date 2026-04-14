@@ -1,0 +1,14 @@
+{
+  "id": "10-cthead-trigger-minor-head-injury",
+  "description": "45M fell off ladder, brief LOC, GCS 15 in ED — Canadian CT Head candidate",
+  "chiefComplaint": "Head injury after fall",
+  "transcript": "Dr. Olsen: What happened?\nPatient: I was on a ladder cleaning the gutters, maybe eight feet up. I lost my balance and fell. I hit the side of my head on the patio.\nDr. Olsen: Did you lose consciousness?\nWife: He was out for maybe a minute. I ran over and he was just lying there. He came around, but he kept asking me what happened, like three or four times.\nDr. Olsen: How long was he confused?\nWife: Maybe ten or fifteen minutes. He's fine now though.\nDr. Olsen: How are you feeling now, sir?\nPatient: Headache, but I know what's going on. I know where I am.\nDr. Olsen: Any vomiting?\nPatient: No.\nDr. Olsen: Any blood thinners?\nPatient: No, nothing.\nDr. Olsen: How old are you?\nPatient: Forty-five.\nDr. Olsen: Past medical history?\nPatient: Healthy. No medications.\nNurse: GCS 15, alert and oriented x3. HR 78, BP 138/82, sat 99.\nDr. Olsen: Pupils equal and reactive. No focal deficits. Battle's sign negative, no raccoon eyes, no hemotympanum. Tender boggy area on the left temporal scalp, no obvious depression.\nDr. Olsen: He's got LOC and brief amnesia from a fall greater than three feet. I want to think about whether he meets criteria for imaging.",
+  "groundTruth": {
+    "expectedSurfaced": ["Canadian_CT_Head"],
+    "forbiddenSurfaced": ["HEART", "PERC", "SF_Syncope", "NEXUS", "Ottawa_Ankle"],
+    "requiredPreFillKeys": {
+      "Canadian_CT_Head": ["high_risk.gcs_under_15_at_2h", "high_risk.suspected_open_depressed_skull_fx", "high_risk.signs_basilar_skull_fx", "high_risk.age_65_or_over", "medium_risk.dangerous_mechanism"]
+    },
+    "notes": "Classic Canadian CT Head case. Minor head injury with witnessed LOC, GCS 15, no obvious high-risk findings on exam, plus a dangerous mechanism (fall from height). Doctor explicitly entering decision mode. Pre-fill should reflect what was heard; missing elements include anything not yet asked (vomiting count, age cutoff at 65)."
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "id": "06-perc-edge-borderline",
+  "description": "30F mild pleuritic CP, mildly tachycardic but otherwise low risk — borderline PERC candidate",
+  "chiefComplaint": "Chest pain",
+  "transcript": "Dr. Wallace: What's going on today?\nPatient: I've had some sharp chest pain since yesterday afternoon. It's worse when I breathe in deeply.\nDr. Wallace: Where exactly?\nPatient: Mostly the right side, kind of in the middle.\nDr. Wallace: Any shortness of breath?\nPatient: Maybe a little, but it could just be because the pain stops me from breathing all the way in.\nDr. Wallace: Any cough, blood?\nPatient: No.\nDr. Wallace: Any leg swelling or leg pain?\nPatient: No, not that I've noticed.\nDr. Wallace: Recent travel, surgery, immobilization?\nPatient: No. I work from home so I sit a lot, but no big trips.\nDr. Wallace: Any prior clots, family history of clots?\nPatient: No.\nDr. Wallace: How old are you?\nPatient: Thirty.\nDr. Wallace: Any medications, birth control, hormone therapy?\nPatient: No, I'm not on anything.\nDr. Wallace: Smoking?\nPatient: Used to. Quit a year ago.\nDr. Wallace: Vitals — HR 98, BP 122/78, sat 98 on room air, temp normal. Lungs clear bilaterally, no calf tenderness, legs symmetric.\nDr. Wallace: I want to think through whether we can clinically rule this out or whether we need imaging.",
+  "groundTruth": {
+    "expectedSurfaced": ["PERC"],
+    "forbiddenSurfaced": ["HEART", "SF_Syncope", "NEXUS", "Ottawa_Ankle", "Canadian_CT_Head"],
+    "requiredPreFillKeys": {
+      "PERC": ["age_under_50"]
+    },
+    "notes": "Edge case: pretest is genuinely low (young, no risk factors, normal vitals, no leg findings). HR 98 is below the PERC cutoff of 100. Surface PERC — this is exactly when the rule is decision-relevant. The pre-fill should reflect heard elements; missing elements include the rest."
+  }
+}

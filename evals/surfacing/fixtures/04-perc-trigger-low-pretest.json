@@ -1,0 +1,14 @@
+{
+  "id": "04-perc-trigger-low-pretest",
+  "description": "28M with mild pleuritic CP, otherwise no PE risk factors — PERC candidate",
+  "chiefComplaint": "Pleuritic chest pain",
+  "transcript": "Dr. Singh: Hi, what brings you in?\nPatient: I've had this sharp pain in my chest for about a day. It hurts more when I breathe in.\nDr. Singh: Where is it?\nPatient: Right side, lower part of the chest.\nDr. Singh: Any shortness of breath?\nPatient: Maybe a tiny bit. Not really.\nDr. Singh: Any leg swelling, leg pain?\nPatient: No.\nDr. Singh: Have you been on any long flights, road trips, immobilized?\nPatient: No, nothing like that.\nDr. Singh: Recent surgery, hospitalization, broken bones?\nPatient: No.\nDr. Singh: Coughing up any blood?\nPatient: No.\nDr. Singh: Any prior blood clots, history of clots in family?\nPatient: No.\nDr. Singh: Are you a smoker?\nPatient: No.\nDr. Singh: Any medical problems?\nPatient: I'm healthy. No medications.\nDr. Singh: How old are you?\nPatient: Twenty-eight.\nDr. Singh: Any chance you're on hormone therapy or estrogen?\nPatient: No, I'm a guy.\nDr. Singh: Right. Let me listen to your lungs and feel your legs.\nDr. Singh: Lungs are clear. No leg swelling, no calf tenderness. HR is 88, sat is 99 on room air.\nDr. Singh: I want to think about whether this could be a small clot in your lung even though you're young and healthy. Let me think through the workup.",
+  "groundTruth": {
+    "expectedSurfaced": ["PERC"],
+    "forbiddenSurfaced": ["HEART", "SF_Syncope", "NEXUS", "Ottawa_Ankle", "Canadian_CT_Head"],
+    "requiredPreFillKeys": {
+      "PERC": ["age_under_50", "no_unilateral_leg_swelling"]
+    },
+    "notes": "Classic low-pretest PE workup. Young, no risk factors, normal vitals, no leg findings. PERC is exactly the rule-out we'd reach for. HEART should NOT fire — the chest pain is pleuritic, not anginal, and the differential is PE, not ACS."
+  }
+}

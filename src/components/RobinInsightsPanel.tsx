@@ -1,6 +1,10 @@
 "use client";
 
-import type { RobinAuditState } from "@/lib/robinTypes";
+import type {
+  ClinicalToolName,
+  ClinicalToolSurfacing,
+  RobinAuditState,
+} from "@/lib/robinTypes";
 
 interface Props {
   audit: RobinAuditState;
@@ -19,6 +23,15 @@ const SEVERITY_COLORS: Record<string, string> = {
   low: "var(--muted)",
 };
 
+const TOOL_DISPLAY_NAMES: Record<ClinicalToolName, string> = {
+  HEART: "HEART score",
+  PERC: "PERC rule",
+  SF_Syncope: "SF Syncope rule",
+  Canadian_CT_Head: "Canadian CT Head",
+  Ottawa_Ankle: "Ottawa Ankle/Foot",
+  NEXUS: "NEXUS c-spine",
+};
+
 function ComplexityBadge({ level }: { level: string }) {
   const colors = COMPLEXITY_COLORS[level] ?? COMPLEXITY_COLORS.straightforward;
   return (
@@ -31,9 +44,69 @@ function ComplexityBadge({ level }: { level: string }) {
   );
 }
 
+function SurfacedToolCard({ surfacing }: { surfacing: ClinicalToolSurfacing }) {
+  return (
+    <div
+      className="rounded-[10px] border-l-2 px-3 py-2.5"
+      style={{
+        borderColor: "var(--border)",
+        borderLeftColor: "var(--teal)",
+        backgroundColor: "var(--teal-dim)",
+      }}
+    >
+      <div className="flex items-center justify-between mb-1">
+        <span
+          className="text-xs font-bold font-syne uppercase tracking-wider"
+          style={{ color: "var(--teal)" }}
+        >
+          {TOOL_DISPLAY_NAMES[surfacing.tool_name]}
+        </span>
+        <span
+          className="text-[9px] font-space-mono uppercase tracking-wider"
+          style={{ color: "var(--muted)" }}
+        >
+          consider
+        </span>
+      </div>
+      <p
+        className="text-xs font-syne mb-1.5"
+        style={{ color: "var(--text)" }}
+      >
+        {surfacing.trigger_rationale}
+      </p>
+      {surfacing.pre_fill_summary && (
+        <p
+          className="text-[11px] font-syne"
+          style={{ color: "var(--text)" }}
+        >
+          {surfacing.pre_fill_summary}
+        </p>
+      )}
+      {surfacing.missing_elements.length > 0 && (
+        <div className="flex flex-wrap gap-1 mt-1.5">
+          {surfacing.missing_elements.map((el) => (
+            <span
+              key={el}
+              className="text-[10px] font-space-mono px-1.5 py-0.5 rounded"
+              style={{
+                backgroundColor: "var(--surface)",
+                color: "var(--muted)",
+                border: "1px solid var(--border)",
+              }}
+            >
+              {el}
+            </span>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function RobinInsightsPanel({ audit }: Props) {
-  const { hpi, mdm, gaps, em, summary, loading } = audit;
-  const hasData = hpi || mdm || gaps.length > 0 || em;
+  const { hpi, mdm, gaps, em, surfacedTools, summary, loading } = audit;
+  const hasData =
+    hpi || mdm || gaps.length > 0 || em || surfacedTools.length > 0;
 
   return (
     <div
@@ -88,6 +161,11 @@ export default function RobinInsightsPanel({ audit }: Props) {
           />
         </div>
       )}
+
+      {/* ── Clinical decision tools (Loop A) ────────────────────────────── */}
+      {surfacedTools.map((s) => (
+        <SurfacedToolCard key={s.surface_id} surfacing={s} />
+      ))}
 
       {/* ── HPI Card ────────────────────────────────────────────────────── */}
       {hpi && (

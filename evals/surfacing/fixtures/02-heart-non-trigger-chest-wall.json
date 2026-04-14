@@ -1,0 +1,11 @@
+{
+  "id": "02-heart-non-trigger-chest-wall",
+  "description": "22F chest pain after CrossFit, reproducible wall tenderness — HEART must NOT fire",
+  "chiefComplaint": "Chest pain",
+  "transcript": "Dr. Kim: Hi, what brings you in?\nPatient: I've got chest pain. It's been a couple of days.\nDr. Kim: Tell me about it.\nPatient: I did a really hard CrossFit workout on Saturday. A lot of overhead pressing. Sunday morning I woke up sore everywhere, and my chest has been hurting since.\nDr. Kim: Where exactly?\nPatient: Right here, on the front, both sides. It's worse when I take a deep breath or press on it.\nDr. Kim: Any shortness of breath, sweating, nausea, palpitations?\nPatient: No, I feel totally fine otherwise.\nDr. Kim: Any radiation to arm or jaw?\nPatient: No.\nDr. Kim: How old are you?\nPatient: Twenty-two.\nDr. Kim: Any medical problems? Smoking, family history?\nPatient: No, I'm healthy. No family history.\nDr. Kim: Let me press on your chest. Does this hurt? And here? And here?\nPatient: Yes, all of those. That's the pain.\nDr. Kim: Yeah, this is reproducible chest wall pain from the workout. Lungs are clear, heart sounds normal. I'm comfortable that this is musculoskeletal. We don't need labs or an EKG for this.\nDr. Kim: Take ibuprofen for a few days, ice it, give it a week. Come back if anything changes — new shortness of breath, fevers, anything that doesn't fit.",
+  "groundTruth": {
+    "expectedSurfaced": [],
+    "forbiddenSurfaced": ["HEART", "PERC", "SF_Syncope", "Canadian_CT_Head", "Ottawa_Ankle", "NEXUS"],
+    "notes": "Classic over-fire trap. Chest pain mentioned, but the entire encounter establishes reproducible chest wall pain in a young healthy athlete. ACS is not on the differential. HEART must NOT fire."
+  }
+}

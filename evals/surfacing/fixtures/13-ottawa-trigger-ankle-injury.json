@@ -1,0 +1,14 @@
+{
+  "id": "13-ottawa-trigger-ankle-injury",
+  "description": "26F twisted ankle playing soccer, can't bear weight — Ottawa Ankle candidate",
+  "chiefComplaint": "Ankle injury",
+  "transcript": "Dr. Wu: What happened?\nPatient: I was playing soccer this afternoon. I went to plant my foot and rolled my ankle inward. I felt a pop and went down.\nDr. Wu: Were you able to walk after?\nPatient: No. My friends had to help me off the field. I tried to put weight on it once and it was way too painful.\nDr. Wu: Have you been able to walk at all since?\nPatient: Maybe a couple of steps in the parking lot, hopping mostly. Not really walking.\nDr. Wu: How old are you?\nPatient: Twenty-six.\nDr. Wu: Any other injuries? Knee, hip, back?\nPatient: No, just the ankle.\nDr. Wu: Any medical problems? Pregnancy?\nPatient: No.\nDr. Wu: Let me take a look. Significant swelling around the lateral malleolus. Tender right at the posterior edge of the lateral malleolus, also along the distal six centimeters of the fibula. Medial side is non-tender. Foot midfoot non-tender. Navicular non-tender. Base of fifth metatarsal non-tender.\nDr. Wu: Can you put any weight on it now?\nPatient: I really can't.\nDr. Wu: Thinking about whether she needs an X-ray.",
+  "groundTruth": {
+    "expectedSurfaced": ["Ottawa_Ankle"],
+    "forbiddenSurfaced": ["HEART", "PERC", "SF_Syncope", "NEXUS", "Canadian_CT_Head"],
+    "requiredPreFillKeys": {
+      "Ottawa_Ankle": ["ankle.posterior_lateral_malleolus_tenderness", "ankle.posterior_medial_malleolus_tenderness", "ankle.cannot_bear_weight_4_steps"]
+    },
+    "notes": "Classic Ottawa Ankle case. Ankle injury with malleolar pain, posterior lateral malleolus tenderness, inability to weight-bear immediately and in ED. Doctor verbally enters the decision. Surface with the heard criteria pre-filled."
+  }
+}

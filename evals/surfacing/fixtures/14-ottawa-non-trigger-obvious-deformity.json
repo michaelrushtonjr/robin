@@ -1,0 +1,11 @@
+{
+  "id": "14-ottawa-non-trigger-obvious-deformity",
+  "description": "55M ankle dislocation with obvious deformity — Ottawa Ankle moot, X-ray regardless",
+  "chiefComplaint": "Ankle deformity after fall",
+  "transcript": "Dr. Banks: What happened?\nPatient: I fell off the back of my truck. About four feet. Landed on my ankle.\nDr. Banks: Let me look. Significant deformity of the right ankle. The foot is angulated laterally. Skin is intact, no open wound.\nDr. Banks: Can you feel me touching your toes?\nPatient: Yes.\nDr. Banks: Wiggle them for me? Good. Capillary refill is brisk. Dorsalis pedis is palpable. Foot is warm and pink.\nDr. Banks: We need to reduce this and get an X-ray. Let me get fentanyl, prep for procedural sedation. We're going to reduce it under sedation, splint, and get pre- and post-reduction X-rays.\nDr. Banks: Nurse, page ortho, page anesthesia for backup if we need it. Set up the conscious sedation kit.",
+  "groundTruth": {
+    "expectedSurfaced": [],
+    "forbiddenSurfaced": ["Ottawa_Ankle", "HEART", "PERC", "SF_Syncope", "NEXUS", "Canadian_CT_Head"],
+    "notes": "Ottawa Ankle is a rule-out for whether to image a low-suspicion ankle injury. With obvious deformity (likely fracture-dislocation), the patient is getting imaging regardless — the rule is moot. Doctor is in management mode (reduction, sedation, ortho consult), not deciding on imaging. Surfacing the rule would be noise."
+  }
+}

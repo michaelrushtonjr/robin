@@ -1,0 +1,14 @@
+{
+  "id": "09-sfsyncope-edge-near-syncope",
+  "description": "70F near-syncope with one CHESS criterion (mildly abnormal EKG) — borderline SF Syncope",
+  "chiefComplaint": "Near-fainting",
+  "transcript": "Dr. Hayes: What brought you in?\nPatient: I almost passed out this morning. I was standing up from the couch and I got really lightheaded, the room started to gray out. I sat back down and it passed in maybe thirty seconds.\nDr. Hayes: Did you actually lose consciousness?\nPatient: No, I sat down before that happened. But I was close.\nDr. Hayes: Has this happened before?\nPatient: Not like this. I've gotten a little dizzy before standing, but never this bad.\nDr. Hayes: Any chest pain, palpitations, shortness of breath?\nPatient: No chest pain. Maybe a little short of breath when I walk to the mailbox lately, but I figured I was just out of shape.\nDr. Hayes: Any history of heart failure?\nPatient: No.\nDr. Hayes: Past medical?\nPatient: High blood pressure, on amlodipine. Cholesterol, on a statin.\nDr. Hayes: Family history of sudden cardiac death?\nPatient: No.\nNurse: HR 64, BP 128/74, sat 97, temp normal. Hematocrit pending.\nDr. Hayes: Let me look at the EKG. Sinus, rate 64, but I'm seeing some new T-wave inversions in the lateral leads compared to her old EKG from last year. That's new.\nDr. Hayes: Lungs clear. Heart regular. No leg edema. Neuro intact.\nDr. Hayes: This is technically near-syncope, but with new EKG changes I'm not comfortable calling this benign. Let me think through the risk-stratification.",
+  "groundTruth": {
+    "expectedSurfaced": ["SF_Syncope"],
+    "forbiddenSurfaced": ["HEART", "PERC", "NEXUS", "Ottawa_Ankle", "Canadian_CT_Head"],
+    "requiredPreFillKeys": {
+      "SF_Syncope": ["abnormal_ekg"]
+    },
+    "notes": "Edge case. Some interpretations of SF Syncope require true LOC; many EM docs apply the framework to near-syncope with similar features. Here there is a positive CHESS criterion (new EKG changes) and the doctor is explicitly entering risk-stratification mode. Surfacing the rule with the abnormal_ekg pre-filled is decision-relevant. The remaining CHESS criteria should be marked as missing — especially the SOB question, which the doctor only got a soft answer to."
+  }
+}

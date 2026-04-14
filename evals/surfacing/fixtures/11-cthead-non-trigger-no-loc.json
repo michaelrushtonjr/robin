@@ -1,0 +1,11 @@
+{
+  "id": "11-cthead-non-trigger-no-loc",
+  "description": "32F walked into an open cabinet, no LOC, no amnesia, GCS 15 — Canadian CT Head must NOT fire",
+  "chiefComplaint": "Head bump",
+  "transcript": "Dr. Reyes: Hi, what's going on?\nPatient: I was reaching into the upper cabinet at home, and I stood up into the corner of another cabinet door that was open. Hit the top of my head pretty hard.\nDr. Reyes: Did you pass out at all? Even briefly?\nPatient: No, I just said a lot of bad words. Then I went and put ice on it.\nDr. Reyes: Any memory loss before or after?\nPatient: No, I remember the whole thing. I was annoyed, that's why I came in — my husband insisted.\nDr. Reyes: Any vomiting, severe headache, vision changes?\nPatient: No. A little tender where I hit, that's all.\nDr. Reyes: Any blood thinners?\nPatient: No.\nDr. Reyes: How old are you?\nPatient: Thirty-two. I'm healthy, no medications.\nNurse: GCS 15, alert and oriented x3. HR 76, BP 118/72, sat 99.\nDr. Reyes: Small tender area at the top of the head, no laceration, no obvious depression. Pupils equal, no focal deficits. No basal skull signs.\nDr. Reyes: This doesn't meet criteria for imaging. No LOC, no amnesia, low-energy mechanism, normal exam. We can observe briefly and discharge with head injury precautions.",
+  "groundTruth": {
+    "expectedSurfaced": [],
+    "forbiddenSurfaced": ["Canadian_CT_Head", "HEART", "PERC", "SF_Syncope", "NEXUS", "Ottawa_Ankle"],
+    "notes": "Canadian CT Head requires LOC, amnesia, or witnessed disorientation as the entry criterion. Without any of those, the rule does not apply. Surfacing it here would be noise — the doctor has correctly identified that this isn't even a candidate."
+  }
+}

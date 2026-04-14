@@ -1,0 +1,11 @@
+{
+  "id": "05-perc-non-trigger-active-cancer",
+  "description": "60F with active breast cancer, pleuritic CP, leg swelling — high pretest, PERC must NOT fire",
+  "chiefComplaint": "Shortness of breath and chest pain",
+  "transcript": "Dr. Lopez: Hi, what's going on?\nPatient: I've been getting more short of breath for about three days. Now I have a sharp pain on the left side of my chest.\nDr. Lopez: Tell me about your medical history.\nPatient: I have metastatic breast cancer. I'm in the middle of chemo. I had surgery six weeks ago, a port placement.\nDr. Lopez: Any leg pain, swelling?\nPatient: My left calf has been swollen and tender for about a week. I thought it was from being inactive.\nDr. Lopez: Any cough, blood?\nPatient: I coughed up a little blood-tinged sputum yesterday.\nDr. Lopez: Vitals?\nNurse: HR 112, BP 118/72, sat 91 on room air, temp 37.4.\nDr. Lopez: This is concerning for PE. We need to move on this. Let me get a CT-PA, troponin, BNP, d-dimer, EKG, CBC, BMP. Heparin if no contraindications. Let's also start oxygen.\nDr. Lopez: Lungs are clear on the right, slight rales on the left. Heart sounds tachycardic, no murmur. Left calf is swollen, warm, tender.\nDr. Lopez: With your cancer, the surgery, and the leg findings, this is high probability for PE. We're not going to rule it out by clinical criteria — we need imaging.",
+  "groundTruth": {
+    "expectedSurfaced": [],
+    "forbiddenSurfaced": ["PERC", "HEART", "SF_Syncope", "NEXUS", "Ottawa_Ankle", "Canadian_CT_Head"],
+    "notes": "Critical PERC over-fire trap. PE is on the differential, but pretest probability is HIGH (active cancer, recent surgery, hemoptysis, unilateral leg swelling, tachycardia, hypoxia). PERC is a rule-out for LOW-pretest patients only. Applying PERC here is clinically wrong. The doctor explicitly says this is high probability — Robin should agree by NOT surfacing PERC."
+  }
+}

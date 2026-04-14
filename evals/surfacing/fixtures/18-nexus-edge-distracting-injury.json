@@ -1,0 +1,14 @@
+{
+  "id": "18-nexus-edge-distracting-injury",
+  "description": "42F MVC with no neck tenderness but a painful displaced wrist fracture — distracting injury question",
+  "chiefComplaint": "MVC, wrist injury",
+  "transcript": "Dr. Lin: Tell me what happened.\nPatient: I was driving home and a car ran a stop sign. Hit me on the driver's side. Maybe thirty miles an hour.\nDr. Lin: Air bags deploy?\nPatient: Yes. I was wearing my seatbelt.\nDr. Lin: Any loss of consciousness?\nPatient: No.\nDr. Lin: Where do you hurt?\nPatient: My left wrist is killing me. It looks crooked. That's mostly what I'm focused on.\nDr. Lin: Anything else? Neck, back, head, chest?\nPatient: My neck is a little sore but honestly the wrist is so much worse I'm not really paying attention to anything else.\nDr. Lin: Any drugs, alcohol?\nPatient: No.\nDr. Lin: How old are you, medical problems?\nPatient: Forty-two. Healthy.\nDr. Lin: Alert, oriented x3. Left wrist with obvious deformity, dinner-fork appearance, swelling, point tender. Distal pulses intact, sensation intact, can wiggle fingers.\nDr. Lin: Let me check your neck. Any tenderness in the midline? Here? Here?\nPatient: No, that doesn't really hurt. Maybe the muscles on the side a little.\nDr. Lin: Midline non-tender. Paraspinal mild tenderness bilaterally. Neuro exam is normal — strength and sensation intact in all four extremities.\nDr. Lin: She has no midline tenderness but she has a clearly distracting injury — that displaced wrist. Thinking about whether I can clinically clear her cervical spine.",
+  "groundTruth": {
+    "expectedSurfaced": ["NEXUS"],
+    "forbiddenSurfaced": ["HEART", "PERC", "SF_Syncope", "Ottawa_Ankle", "Canadian_CT_Head"],
+    "requiredPreFillKeys": {
+      "NEXUS": ["midline_c_spine_tenderness", "focal_neuro_deficit", "altered_alertness", "intoxication", "painful_distracting_injury"]
+    },
+    "notes": "Edge case on the distracting injury criterion. The doctor is explicitly weighing whether the wrist counts as distracting under NEXUS. Surface the rule with the distracting_injury question highlighted as a positive — that is the decision-relevant criterion here. Ottawa Ankle should NOT fire — the injury is wrist, not ankle/foot."
+  }
+}

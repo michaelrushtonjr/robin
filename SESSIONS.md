@@ -9,6 +9,34 @@ Keep each entry tight — 5–10 lines max. This is a log, not documentation.
 
 ## Sessions
 
+### 2026-04-14 — Clinical decision tool surfacing engine (Loop A) + 18-fixture eval suite
+**Built:**
+- `src/lib/clinicalSurfacing.ts` — `runClinicalSurfacing()` pure function. Library of 6 tools (HEART, PERC, SF Syncope, Canadian CT Head, Ottawa Ankle, NEXUS) with explicit per-tool TRIGGER and DO NOT SURFACE rules. Server-side `coercePreFill()` strips loose JSON to typed per-tool shapes. Emits `clinical_tool_surfaced` / `surfacing_done` / `error` events.
+- `src/app/api/clinical-surfacing/route.ts` — thin SSE wrapper, mirrors `/api/robin-think` pattern. Auth-gated. Eval mode opt-in via `x-robin-eval: 1` header.
+- `src/lib/robinTypes.ts` — added 6 per-tool `*PreFill` interfaces, `ClinicalToolName` union, `ClinicalToolPreFill` discriminated union, `ClinicalToolSurfacing` (with `surface_id` UUID for forward compat with item 19's `surfacing_events` table), `surfacedTools: ClinicalToolSurfacing[]` on `RobinAuditState`.
+- `src/components/RobinInsightsPanel.tsx` — `SurfacedToolCard` component, teal palette (distinct from MDM/gaps), renders above HPI to reflect Loop A's higher product priority. Displays trigger rationale + pre-fill summary + missing elements as chips.
+- `evals/surfacing/{rubric,runSurfacingEvals,runOverfireRegression}.ts` — eval harness mirroring `evals/runEvals.ts`. Dot-notation path lookup for nested `pre_fill` assertions. Substring matching for `missing_elements`. Pretty printers with ANSI colors.
+- `evals/surfacing/fixtures/*.json` — 18 fixtures, 3 per tool: 1 clear trigger + 1 over-fire trap + 1 edge case at the decision boundary.
+
+**Validated:**
+- **18/18 PASS** at temperature 0, stable across multiple consecutive runs.
+- Bonus over-fire regression on the 13 existing MDM fixtures: only 3 fires, all clinically appropriate (HEART for 44yo with FHx MI on chest tightness, NEXUS on intox head trauma, Ottawa on ankle sprain). 9 silent on encounters that legitimately don't match any tool (abd pain, septic shock, mech LBP, peds OM, ACE rash, dental, etc.). The previously-contradictory PERC fire on the high-pretest PE case is now suppressed.
+
+**Decided:**
+- 3 prompt strengthenings landed during iteration: (1) generalized "past the decision point" guard with explicit examples beyond cath lab, (2) explicit benign-vasovagal exclusion under SF_Syncope, (3) THE RATIONALE TEST meta-rule: if your `trigger_rationale` would explain why the tool doesn't apply, do not fire at all. The third one was the highest-leverage edit — it killed the soft over-fire pattern where the model surfaced a tool while explaining its own non-applicability.
+- Per-tool typed pre-fill (vs. free-form blob) is worth the coercion code — it lets the rubric assert specific elements like `Canadian_CT_Head.high_risk.dangerous_mechanism`, which catches under-pre-filling that a string-match assertion would miss.
+- Surfacing engine lives in a separate route (`/api/clinical-surfacing`), not folded into `/api/robin-think`. Two parallel pipelines so Loop A and Loop B can be triggered, evaluated, and tuned independently.
+
+**Deferred:**
+- Live audio wiring into `useShiftAmbient`. Will land in a separate commit once item 19's `surfacing_events` table exists, so engagement tracking is wired from the first live surfacing rather than retrofitted.
+- Differential expander (item 16) — sibling Loop A capability, can run in parallel.
+- Item 16.5 (memory architecture audit) — informs how surfacing context flows shift→shift.
+- Canadian CT Head pre-fill schema does not yet capture entry criteria (LOC / amnesia / witnessed disorientation). Works for current fixtures but a v2 schema extension would let the panel display "Heard: LOC ~1min, brief amnesia, GCS 15." Note for follow-up.
+
+**Next:** item 16 (differential expander) and item 16.5 (memory architecture audit). After those land, item 19 (`surfacing_events` table) → live audio wiring of surfacing → trial shift.
+
+---
+
 ### 2026-04-08 — WoZ corpus to 13 encounters + `vague_workup_language` gap
 **Built:**
 - `evals/encounters/09-ace-rash.json` — elderly F rash, ACE-I culprit. Tests risk axis on ambiguous Rx adjustment. **PASS**

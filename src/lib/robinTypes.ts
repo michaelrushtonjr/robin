@@ -49,6 +49,107 @@ export interface HPICompleteness {
   brief_or_extended: "brief" | "extended";
 }
 
+// ─── Clinical decision tool surfacing (Loop A) ──────────────────────────────
+
+export type ClinicalToolName =
+  | "HEART"
+  | "PERC"
+  | "SF_Syncope"
+  | "Canadian_CT_Head"
+  | "Ottawa_Ankle"
+  | "NEXUS";
+
+/**
+ * Per-tool pre-fill schemas. Each tool surfaces a structured payload with
+ * only the fields Robin heard in the transcript. Omitted fields = not heard.
+ *
+ * The values are intentionally typed (not free-form strings) so the panel
+ * can render proper UIs and the eval rubric can assert specific elements.
+ */
+export interface HEARTPreFill {
+  history?: "typical" | "non_typical" | "atypical";
+  ekg?: "normal" | "non_specific" | "significant_st_deviation";
+  age?: number;
+  risk_factors_count?: number;
+  risk_factors_heard?: string[];
+  troponin?: "normal" | "1-3x_uln" | ">3x_uln";
+}
+
+export interface PERCPreFill {
+  age_under_50?: boolean;
+  hr_under_100?: boolean;
+  spo2_at_least_95?: boolean;
+  no_hemoptysis?: boolean;
+  no_estrogen_use?: boolean;
+  no_recent_surgery_trauma?: boolean;
+  no_prior_dvt_pe?: boolean;
+  no_unilateral_leg_swelling?: boolean;
+}
+
+export interface SFSyncopePreFill {
+  chf_history?: boolean;
+  hematocrit_under_30?: boolean;
+  abnormal_ekg?: boolean;
+  shortness_of_breath?: boolean;
+  sbp_under_90?: boolean;
+}
+
+export interface CanadianCTHeadPreFill {
+  high_risk?: {
+    gcs_under_15_at_2h?: boolean;
+    suspected_open_depressed_skull_fx?: boolean;
+    signs_basilar_skull_fx?: boolean;
+    vomiting_2_or_more?: boolean;
+    age_65_or_over?: boolean;
+  };
+  medium_risk?: {
+    amnesia_over_30min?: boolean;
+    dangerous_mechanism?: boolean;
+  };
+}
+
+export interface OttawaAnklePreFill {
+  ankle?: {
+    posterior_lateral_malleolus_tenderness?: boolean;
+    posterior_medial_malleolus_tenderness?: boolean;
+    cannot_bear_weight_4_steps?: boolean;
+  };
+  foot?: {
+    base_5th_metatarsal_tenderness?: boolean;
+    navicular_tenderness?: boolean;
+    cannot_bear_weight_4_steps?: boolean;
+  };
+}
+
+export interface NEXUSPreFill {
+  midline_c_spine_tenderness?: boolean | null;
+  focal_neuro_deficit?: boolean;
+  altered_alertness?: boolean;
+  intoxication?: boolean;
+  painful_distracting_injury?: boolean;
+}
+
+export type ClinicalToolPreFill =
+  | { tool_name: "HEART"; pre_fill: HEARTPreFill }
+  | { tool_name: "PERC"; pre_fill: PERCPreFill }
+  | { tool_name: "SF_Syncope"; pre_fill: SFSyncopePreFill }
+  | { tool_name: "Canadian_CT_Head"; pre_fill: CanadianCTHeadPreFill }
+  | { tool_name: "Ottawa_Ankle"; pre_fill: OttawaAnklePreFill }
+  | { tool_name: "NEXUS"; pre_fill: NEXUSPreFill };
+
+/**
+ * A single surfacing event. The `surface_id` is the stable identifier that
+ * item 19's `surfacing_events` table will use to track engaged|ignored.
+ * Wired from day one so engagement tracking is not a retrofit.
+ */
+export type ClinicalToolSurfacing = ClinicalToolPreFill & {
+  trigger_rationale: string;
+  pre_fill_summary: string;
+  missing_elements: string[];
+  surface_id: string;
+  surfaced_at: string;
+};
+
 // ─── Robin Audit state (consumed by RobinInsightsPanel) ──────────────────────
 
 export interface RobinAuditState {
@@ -68,6 +169,8 @@ export interface RobinAuditState {
     upgrade_possible: boolean;
     upgrade_requires: string | null;
   };
+  /** Clinical decision tools surfaced for this encounter. */
+  surfacedTools: ClinicalToolSurfacing[];
   summary?: string;
   loading: boolean;
 }

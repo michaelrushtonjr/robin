@@ -1,0 +1,11 @@
+{
+  "id": "03-heart-edge-cathlab-active",
+  "description": "STEMI with cath lab already activated — HEART is moot, must NOT fire",
+  "chiefComplaint": "Chest pain, anterior STEMI",
+  "transcript": "Charge: Dr. Nguyen, EMS is calling, possible STEMI, 58yo male, ETA four minutes, EKG transmitted, anterior ST elevations.\nDr. Nguyen: That's a STEMI. Activate the cath lab. Get the room ready, aspirin if EMS hasn't given it, draw heparin.\nDr. Nguyen: Sir, you're having a heart attack. Cardiology is taking you upstairs to open the artery. When did the pain start?\nPatient: Forty-five minutes ago.\nDr. Nguyen: Radiation?\nPatient: My left arm and jaw.\nDr. Nguyen: Any prior heart problems?\nPatient: No, never.\nDr. Nguyen: Smoker, cholesterol, diabetes?\nPatient: Smoker. Cholesterol high. No diabetes.\nDr. Nguyen: Aspirin from EMS?\nPatient: Yes.\nCharge: Cath lab is ready, they want him up now.\nDr. Nguyen: Let's go. I'll dictate after.",
+  "groundTruth": {
+    "expectedSurfaced": [],
+    "forbiddenSurfaced": ["HEART", "PERC", "SF_Syncope", "NEXUS", "Ottawa_Ankle", "Canadian_CT_Head"],
+    "notes": "STEMI with cath lab activation. The decision point HEART is meant to inform has already passed — the patient is going to the cath lab regardless. Surfacing HEART here would be noise, not value. This is the 'past the decision point' guard from the system prompt."
+  }
+}

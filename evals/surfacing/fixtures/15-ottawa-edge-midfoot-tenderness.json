@@ -1,0 +1,14 @@
+{
+  "id": "15-ottawa-edge-midfoot-tenderness",
+  "description": "34F twisted ankle and foot, tender at base of fifth metatarsal — Ottawa Foot territory, borderline",
+  "chiefComplaint": "Foot and ankle pain",
+  "transcript": "Dr. Mehta: What happened?\nPatient: I stepped off a curb wrong this morning. My ankle rolled and I felt pain in my foot too.\nDr. Mehta: Were you able to walk after?\nPatient: I limped to my car. It hurt but I could put some weight on it. I drove here.\nDr. Mehta: Where does it hurt the most?\nPatient: Mostly on the outside of my foot, kind of in the middle. The ankle is a little sore too but the foot is the main thing.\nDr. Mehta: How old are you, any medical issues?\nPatient: Thirty-four. Healthy.\nDr. Mehta: Let me palpate. Lateral malleolus — non-tender. Medial malleolus — non-tender. Posterior edges of both — non-tender. Distal six centimeters of fibula and tibia — non-tender. Now the foot. Navicular — non-tender. Base of fifth metatarsal — yes, that's tender. Definitely point tender right there.\nDr. Mehta: Can you walk across the room for me?\nPatient: It hurts but I can.\nDr. Mehta: She's tender at the base of the fifth metatarsal. Thinking about whether this needs an X-ray.",
+  "groundTruth": {
+    "expectedSurfaced": ["Ottawa_Ankle"],
+    "forbiddenSurfaced": ["HEART", "PERC", "SF_Syncope", "NEXUS", "Canadian_CT_Head"],
+    "requiredPreFillKeys": {
+      "Ottawa_Ankle": ["foot.base_5th_metatarsal_tenderness", "foot.navicular_tenderness", "foot.cannot_bear_weight_4_steps"]
+    },
+    "notes": "The Ottawa Ankle rules also include the Ottawa Foot rules — base of fifth metatarsal tenderness or navicular tenderness in the midfoot zone are foot X-ray indications. This is a borderline case where the ankle exam is negative but the foot exam triggers the foot arm of the rule. Surface Ottawa Ankle (which encompasses the foot rules) with what was heard pre-filled."
+  }
+}
