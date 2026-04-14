@@ -372,6 +372,30 @@ This allows robin-think to say: "You've been documenting your ROS as 'reviewed a
 
 ---
 
+## Product Direction (updated 2026-04-13)
+
+**Headline reframe:** Robin is "the resident on your shoulder" — an attending-level second brain that watches every patient, surfaces relevant clinical frameworks at the right moment, and writes notes as a byproduct. Notes are the price of entry. The product is the second brain.
+
+**Two parallel agentic loops define the product:**
+
+### Loop A — Clinical Decision Support (proactive, panel-only, never voice)
+Watch the live transcript. When presentation patterns match clinical rules in the KB, surface the relevant decision tool or differential addition silently in the insights panel. Physician glances over and engages or ignores at will. Interruption cost: zero. Value: high. Moat: structural — only an agentic system with a clinical KB and live transcript awareness can do this, and it requires zero EMR integration. Scribes architecturally cannot follow.
+
+**Two sub-features:**
+- **Clinical decision tool surfacing** — pattern-match transcript to KB tools (HEART, PERC, SF Syncope, Canadian CT Head, Ottawa Ankle, NEXUS to start), pre-fill with elements already heard, surface in panel
+- **Differential expander** — maintain working differential as encounter unfolds, silently add diagnoses physician hasn't mentioned but should consider, ranked by pretest probability + badness-if-missed
+
+### Loop B — Documentation Completeness (preference-gated, contextual)
+Track which required documentation elements exist for each encounter (PE, EKG interpretation, MDM rationale, return precautions, dispo rationale, ROS). Surface what's missing only at natural documentation moments (MDM-dictation-start or end-encounter), never mid-encounter, never as time-based staleness nudges. Preference-gated per category — physicians can disable any reminder type they don't want.
+
+**Killed:** "Pending items as clinical staleness tracker" and the "what am I waiting on" voice query. EM physicians run the board with their eyes; verbalizing pending clinical actions to Robin would be a burden, not a feature. The pending-items construct survives only as a documentation-completeness mechanism, which is a smaller but honest claim.
+
+**Design constraint locked:** Robin's clinical contributions live in the insights panel, not the voice channel. Voice interruptions are reserved for rare can't-miss moments and default off in v1. Visual surfacing in the panel is unlimited because the physician chooses to look or not.
+
+**Pure passive for v1.** No attention cues, no soft pulses, no tones. Log every surfacing event with `engaged | ignored` signal so we can tune v2 from real trial data instead of guessing.
+
+---
+
 ## Screens Status
 
 | Screen | Status |
@@ -444,7 +468,7 @@ the SESSIONS.md entry is short — but it still exists.
 
 ---
 
-## Build Priority Queue
+## Build Priority Queue (updated 2026-04-13)
 
 **Agentic roadmap:** Layer 2 → Layer 1 → Note Dashboard → Layer 3 (see `/docs/robin-agentic-spec.md`)
 
@@ -461,7 +485,47 @@ the SESSIONS.md entry is short — but it still exists.
 11. **BAAs** — all five vendors
 12. ~~**Expand WoZ corpus**~~ ✅ Done — full 13-encounter regression suite, all passing deterministic-with-drift-tolerance at temp 0. Covers: abd pain workup, septic shock, mech LBP, STEMI, stroke+TNK, PE (over-trigger guard), peds OM, elderly mets, ACE-I rash, panic/PE differential, intoxicated head trauma, dental, ankle sprain
 13. ~~**Wizard of Oz validation**~~ ✅ Rounds 1–3 done — 13/13 passing; CC fix proven on STEMI + stroke + septic shock; over-trigger guard proven on PE; peds rules don't over-fire; tone test passed on dental drug-seeking nuance; `vague_workup_language` gap added
-14. **First trial shift**
+14. ~~**First trial shift**~~ → see item 22
+
+**Engineering notes for the active sprint:**
+- The clinical surfacing engine needs eval fixtures the same way `robinThink` does — trigger cases and non-trigger cases for each tool. Budget a half-day during the sprint. The 13-fixture MDM regression suite was the right investment; the surfacing engine deserves the same treatment from day one, not as a retrofit.
+- The `surfacing_events` table is the quiet hero of the trial. It turns the trial shift from a vibes check into a data artifact you can show a medical director. Wire the logging from the very first surfacing event, not as an afterthought — retroactive logging is how you end up with a great trial and no metrics to point at.
+
+**Active sprint — week of April 13:**
+
+15. **Clinical decision tool surfacing engine** — `src/lib/clinicalSurfacing.ts`, trigger logic for 6 tools (HEART, PERC, SF Syncope, Canadian CT Head, Ottawa Ankle, NEXUS), pre-fill from transcript, surfaces in `RobinInsightsPanel`. New event type in SSE stream: `clinical_tool_surfaced`. Eval fixtures for trigger and non-trigger cases.
+16. **Differential expander** — maintain working ddx in encounter state, silently add diagnoses physician hasn't mentioned, render in "consider also" section of insights panel. Can run parallel to #15.
+17. **Documentation completeness tracker** — `src/lib/documentationCompleteness.ts`, per-encounter checklist (PE, EKG, MDM, return precautions, dispo, ROS), surfaces at MDM-dictation-start or end-encounter only.
+18. **Preferences expansion** — per-category documentation reminder toggles + clinical surfacing aggressiveness toggles. Update `RobinPreferences` interface and `translatePreferences()`. Update onboarding interview to ask the new questions.
+19. **Surfacing event logging** — every surfacing event written to a new `surfacing_events` table with `timestamp`, `encounter_id`, `surface_type`, `tool_name | diagnosis_name`, `engaged_at`, `dismissed_at`. Powers v2 tuning + design partner pitch material.
+
+**Week of April 20:**
+
+20. **Sign-out generator** — one-tap, reads from shift state, structured handoff document. Highest-leverage sticky feature, demos in 30 seconds.
+21. **Interruption budget / `interruptionPolicy.ts`** — explicit rules for the rare voice-channel interruptions. Default off in v1.
+22. **Self-recorded trial shift** — 9-hour, 15–20 encounters, mixed presentations to exercise the surfacing engine. End-to-end pipeline validation. Honest feedback mechanism, not a demo run.
+23. **HeyGen founder demo video** — 3–5 min, lead with clinical surfacing + sign-out.
+24. **One-pager + sharpened pitch** — reframe around "resident on your shoulder."
+25. **Target list of 15–25 independent EM groups.**
+
+**Week of April 27:**
+
+26. **Outbound wave 1.**
+27. **First design partner conversation — hard date April 22.**
+
+**BAA paperwork — start today, runs in parallel:**
+- Supabase BAA email sent
+- Deepgram BAA email sent
+- Anthropic Enterprise conversation initiated
+
+**Deferred until post-trial or post-design-partner:**
+- AudioWorklet migration (TD-001)
+- Post-discharge callback POC (Twilio + ElevenLabs) — moved from "next sprint" to "after design partner signs"; was the wrong call to pull it forward before the surfacing engine
+- Mid-shift audit feature
+- Voice-channel interruption tier
+- Attention cues / soft pulses on the panel
+- Physician profile / settings screen polish
+- Fly.io suspend mode (TD-003)
 
 ---
 
@@ -473,3 +537,7 @@ the SESSIONS.md entry is short — but it still exists.
 - Process real PHI before BAAs are signed
 - Commit to main without running `npm run build` locally first
 - Make clinical recommendations in Robin's voice — documentation domain only
+- Surface clinical decision tools or differential additions via the voice channel. Panel only. Voice is reserved for rare, preference-gated, can't-miss interruptions and is off by default in v1.
+- Add time-based staleness nudges for clinical actions. Robin does not track clinical pending items because EM physicians run the board with their eyes. Documentation completeness only.
+- Build documentation reminders that fire mid-encounter. Reminders ride along with natural documentation moments (MDM-dictation-start, end-encounter), never as standalone interruptions.
+- Make any documentation reminder non-disableable. Every category must be physician-configurable via preferences.
