@@ -1,4 +1,10 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import type {
+  ClinicalToolName,
+  RobinLongitudinal,
+  ShiftMemory,
+} from "./robinTypes";
+import { humanizeGapType } from "./memory";
 
 // ─── Robin's core identity ────────────────────────────────────────────────────
 export const ROBIN_IDENTITY = `You are Robin, an AI shift copilot built exclusively for emergency medicine physicians.
@@ -114,6 +120,136 @@ function translatePreferences(
   return `\nPHYSICIAN PREFERENCES:\n${lines.join("\n")}`;
 }
 
+// ─── Shift memory translation (typed, threshold-gated) ──────────────────────
+
+// Signal thresholds. Below these, observations are stored but silent —
+// prevents mid-shift noise (one random vague gap doesn't become commentary).
+const SHIFT_GAP_TALLY_THRESHOLD = 3;
+const SHIFT_SURFACING_TALLY_THRESHOLD = 2;
+
+const TOOL_SHORT_NAME: Record<ClinicalToolName, string> = {
+  HEART: "HEART",
+  PERC: "PERC",
+  SF_Syncope: "SF Syncope",
+  Canadian_CT_Head: "Canadian CT Head",
+  Ottawa_Ankle: "Ottawa Ankle/Foot",
+  NEXUS: "NEXUS",
+};
+
+function translateShiftMemory(
+  memory: Partial<ShiftMemory> | null | undefined
+): string {
+  if (!memory || Object.keys(memory).length === 0) return "";
+
+  const lines: string[] = [];
+
+  // Rolling gap tallies — only above signal threshold.
+  for (const [gapType, count] of Object.entries(memory.tally?.gaps_by_type ?? {})) {
+    if (count >= SHIFT_GAP_TALLY_THRESHOLD) {
+      lines.push(
+        `- Flagged ${humanizeGapType(gapType)} ${count}× this shift`
+      );
+    }
+  }
+
+  // Rolling surfacing tallies — above threshold.
+  for (const [toolName, count] of Object.entries(
+    memory.tally?.surfacings_by_tool ?? {}
+  )) {
+    if ((count ?? 0) >= SHIFT_SURFACING_TALLY_THRESHOLD) {
+      const nice =
+        TOOL_SHORT_NAME[toolName as ClinicalToolName] ?? toolName;
+      lines.push(`- Surfaced ${nice} ${count}× this shift`);
+    }
+  }
+
+  // Dictation style (fires at first detection; doesn't require threshold).
+  if (memory.observed_patterns?.dictation_style === "batch_pe") {
+    lines.push("- Dictation style this shift: batch PE (multiple patients)");
+  }
+
+  // Critical care count — surface any fire; CC is rare and high-signal.
+  const cc = memory.observed_patterns?.critical_care_count ?? 0;
+  if (cc >= 1) {
+    lines.push(`- ${cc} critical care encounter(s) this shift`);
+  }
+
+  // Code distribution summary when shift is meaningfully underway (5+ codes).
+  const codeTotal = Object.values(memory.tally?.codes_distribution ?? {}).reduce(
+    (a, b) => a + b,
+    0
+  );
+  if (codeTotal >= 5) {
+    const sorted = Object.entries(memory.tally?.codes_distribution ?? {}).sort(
+      (a, b) => b[1] - a[1]
+    );
+    const top = sorted
+      .slice(0, 3)
+      .map(([code, n]) => `${code}×${n}`)
+      .join(", ");
+    lines.push(`- Shift code distribution: ${top}`);
+  }
+
+  if (lines.length === 0) return "";
+  return `\nSHIFT OBSERVATIONS:\n${lines.join("\n")}`;
+}
+
+// ─── Longitudinal translation (threshold-gated at 5 shifts) ─────────────────
+
+const LONGITUDINAL_THRESHOLD_SHIFTS = 5;
+const CHRONIC_MISS_RATE_THRESHOLD = 0.3;
+
+function translateLongitudinal(
+  longitudinal: Partial<RobinLongitudinal> | null | undefined
+): string {
+  if (!longitudinal || Object.keys(longitudinal).length === 0) return "";
+  const shifts = longitudinal.shifts_observed ?? 0;
+  if (shifts < LONGITUDINAL_THRESHOLD_SHIFTS) return "";
+
+  const lines: string[] = [];
+
+  // Chronically missed gaps.
+  for (const gap of longitudinal.chronically_missed_gaps ?? []) {
+    if (
+      gap.miss_rate >= CHRONIC_MISS_RATE_THRESHOLD &&
+      gap.encounter_count >= 5
+    ) {
+      lines.push(
+        `- Chronic miss: ${humanizeGapType(gap.gap_type)} (${Math.round(
+          gap.miss_rate * 100
+        )}% across ${gap.encounter_count} encounters)`
+      );
+    }
+  }
+
+  // Critical care rate (informational, not a delta).
+  const ccRate = longitudinal.coding_distribution?.critical_care_rate ?? 0;
+  if (ccRate >= 0.1) {
+    lines.push(
+      `- ${Math.round(ccRate * 100)}% of shifts have ≥1 critical care encounter`
+    );
+  }
+
+  // Tool engagement (once item 19 ships this becomes meaningful; for now
+  // surfaced_count alone is a weak signal — skip it unless high).
+  for (const [toolName, stats] of Object.entries(
+    longitudinal.tool_engagement ?? {}
+  )) {
+    if (!stats) continue;
+    if (stats.surfaced_count >= 10) {
+      const nice = TOOL_SHORT_NAME[toolName as ClinicalToolName] ?? toolName;
+      lines.push(
+        `- ${nice} surfaced ${stats.surfaced_count}× across ${shifts} shifts`
+      );
+    }
+  }
+
+  if (lines.length === 0) return "";
+  return `\nLONGITUDINAL OBSERVATIONS (across ${shifts} shifts):\n${lines.join(
+    "\n"
+  )}`;
+}
+
 // ─── Context builder ──────────────────────────────────────────────────────────
 export interface RobinContext {
   systemPrompt: string;
@@ -133,7 +269,7 @@ export async function buildRobinContext(
   const { data: physician } = user
     ? await supabase
         .from("physicians")
-        .select("display_name, robin_preferences")
+        .select("display_name, robin_preferences, robin_longitudinal")
         .eq("id", user.id)
         .single()
     : { data: null };
@@ -190,14 +326,15 @@ ${currentEnc.generated_note ? `\nGenerated note:\n${currentEnc.generated_note.sl
   // Build preferences block
   const prefBlock = translatePreferences(physician?.robin_preferences);
 
-  // Shift memory block
-  const memory = shift?.robin_memory;
-  const memoryBlock =
-    memory && Object.keys(memory).length > 0
-      ? `\nSHIFT OBSERVATIONS:\n${Object.entries(memory)
-          .map(([k, v]) => `  ${k}: ${v}`)
-          .join("\n")}`
-      : "";
+  // Shift memory block (typed, threshold-gated)
+  const memoryBlock = translateShiftMemory(
+    shift?.robin_memory as Partial<ShiftMemory> | null
+  );
+
+  // Longitudinal memory block (threshold-gated at 5+ shifts)
+  const longitudinalBlock = translateLongitudinal(
+    physician?.robin_longitudinal as Partial<RobinLongitudinal> | null
+  );
 
   const shiftStart = shift?.started_at
     ? new Date(shift.started_at).toLocaleTimeString([], {
@@ -217,7 +354,7 @@ ${currentEnc.generated_note ? `\nGenerated note:\n${currentEnc.generated_note.sl
 SHIFT CONTEXT
 Physician: Dr. ${physician?.display_name || "Unknown"}
 Shift started: ${shiftStart} | Current time: ${now}
-${prefBlock}${memoryBlock}
+${prefBlock}${memoryBlock}${longitudinalBlock}
 
 ENCOUNTERS THIS SHIFT (${encounterList.length} total):
 ${encounterSummaries || "  No encounters yet."}

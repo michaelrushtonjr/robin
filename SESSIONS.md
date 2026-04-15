@@ -9,6 +9,33 @@ Keep each entry tight — 5–10 lines max. This is a log, not documentation.
 
 ## Sessions
 
+### 2026-04-14 — Memory aggregator + typed reader (item 16.5, commit 4/4 — item 16.5 complete)
+**Built:**
+- `src/app/api/shift/close/route.ts` — POST, auth-gated, ownership-verified. Calls `aggregateShiftToLongitudinal(supabase, shiftId, physicianId)`. Returns `{ ok, newObservations[] }`. The `newObservations` field is the delta detection output — reserved for a future shift-close reconciliation UI, not consumed client-side yet.
+- `src/app/shift/page.tsx` — `endShift()` now calls `/api/shift/close` BEFORE the status flip. Wrapped in try/catch; aggregation failure never blocks shift closure.
+- `src/lib/robinPersona.ts` — typed translators. `translateShiftMemory()` replaces the `Object.entries(memory)` dump with threshold-gated observations: gap tallies surface at `>= 3`, surfacing tallies at `>= 2`, dictation_style on first detection, critical_care_count at `>= 1`, code distribution at `>= 5` total codes. `translateLongitudinal()` surfaces only when `shifts_observed >= 5`: chronically missed gaps at `>= 30%` miss rate with `>= 5` encounter sample, critical care rate at `>= 10%`, tool engagement counts at `>= 10` surfaces. Physician select now includes `robin_longitudinal`.
+
+**Validated:**
+- `npm run build` passes clean. `/api/shift/close` registers in the route manifest alongside the rest.
+- Reader behavior on empty state: `translateShiftMemory({})` returns empty string, `translateLongitudinal({})` returns empty string. Existing prompts unaffected for users without accumulated data — they just stop seeing the old loose Object.entries dump (which was a noise source when the column was `{}`).
+
+**Decided:**
+- Threshold values picked for signal, not precision. `shifts_observed >= 5` gives longitudinal enough observations to separate signal from variance; `gaps_by_type[x] >= 3` mid-shift avoids commenting on a single random gap; `chronic miss >= 30% with >= 5 encounters` is the bar where it's worth surfacing as a delta.
+- `newObservations` is a route output, not surfaced to the physician yet. Deltas accumulate in `physicians.robin_longitudinal.pending_observations` and will be rendered at shift-close time once the reconciliation UI ships (deferred, out of 16.5 scope).
+- Aggregation runs even if no writers fired in a shift (e.g. shift with zero encounters). The helpers degrade gracefully — empty inputs produce empty deltas and minimal counter increments (shifts_observed += 1 is the only guaranteed side effect).
+- Non-fatal wrapping at `endShift()`. If `/api/shift/close` 500s, the shift still closes. Memory is advisory infrastructure; it is never allowed to block a clinical path.
+
+**Deferred:**
+- Shift-close reconciliation UI — `newObservations` rendering, physician "update preference / dismiss / remind me later" actions against `pending_observations`. Separate build.
+- Item 19 — `surfacing_events` table. Once it lands, `engaged_count` populates via a cross-table join during aggregation, and `tool_engagement.engagement_rate` becomes a real signal rather than the current 0.
+- Idempotency guard on aggregation — calling `/api/shift/close` twice on the same shift double-counts. Client calls it exactly once today; if needed later, add an `aggregated_at` column on shifts as a guard.
+
+**Item 16.5 complete.** Memory architecture is end-to-end: encounters.mdm_data (tier 1) populated by robin-think, clinical-surfacing, differential-expander, agent/act. shifts.robin_memory (tier 2) populated by the same writers plus note/finalize. physicians.robin_preferences (tier 3a) unchanged (stated intent, onboarding-only). physicians.robin_longitudinal (tier 3b) populated at shift close. Reconciliation policy documented + enforced: preferences govern behavior; longitudinal informs content; deltas surface only at reconciliation moments (shift close).
+
+**Next:** Item 19 — `surfacing_events` append-only table for engagement tracking. With the memory layer now in place, item 19 slots into the existing `surface_id` hooks without rework. After item 19: first trial shift (item 22) can accumulate real longitudinal signal during the 9-hour run.
+
+---
+
 ### 2026-04-14 — Memory writers wired across five routes (item 16.5, commit 3/4)
 **Built:**
 - `src/app/api/robin-think/route.ts` — `onReady` callback extended. After persisting `encounters.mdm_data`, writes shift-memory encounter rollup (`upsertEncounterInShiftMemory`), increments `tally.gaps_by_type` and `tally.codes_distribution`, bumps `observed_patterns.vague_workup_language_count` when that gap fires, and bumps `observed_patterns.critical_care_count` on 99291/99292.

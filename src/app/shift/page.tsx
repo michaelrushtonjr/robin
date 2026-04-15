@@ -303,6 +303,17 @@ export default function ShiftDashboard() {
   async function endShift() {
     if (!activeShift) return;
     ambient.stopListening();
+    // Aggregate shift memory into longitudinal BEFORE flipping status.
+    // Non-fatal if it fails — the shift still closes.
+    try {
+      await fetch("/api/shift/close", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ shiftId: activeShift.id }),
+      });
+    } catch {
+      // Swallow — aggregation failure should not block end-shift.
+    }
     await supabase
       .from("shifts")
       .update({ status: "completed", ended_at: new Date().toISOString() })

@@ -90,6 +90,7 @@ E&M billing reconciliation, mid-shift audits, and post-discharge voice callbacks
       /agent/procedure-qa/        ← Procedure Q&A — 5 procedure types, KB-driven question sequences
       /clinical-surfacing/route.ts ← Loop A — clinical decision tool surfacing (SSE, 6 tools, typed per-tool pre-fill)
       /differential-expander/route.ts ← Loop A — differential expander (SSE, badness × pretest ranking)
+      /shift/close/route.ts         ← Aggregates closed shift's memory → physician longitudinal (item 16.5)
       /onboarding-interview/      ← Streaming interview chat for physician onboarding (Layer 2)
       /physician/preferences/     ← Save physician preferences (POST, auth-gated)
       /note/section/              ← PATCH — update a specific note section (conflict detection)
@@ -309,6 +310,9 @@ Polishes accumulated note via Claude Sonnet. Assembles all populated sections, s
 
 ### `/api/note/status` (GET) — ✅ COMPLETE
 Returns badge state (PE, MDM, Dx, Dispo, Orders, Consult, Complete) for all shift encounters without fetching full note content. Auth-gated.
+
+### `/api/shift/close` (POST) — ✅ COMPLETE
+Aggregates the shift's memory into the physician's longitudinal record. Called from `endShift()` in `/shift/page.tsx` before flipping shift status to completed. Non-fatal if aggregation fails (the shift still closes). Returns `{ ok, newObservations[] }` — `newObservations` is the list of deltas Robin detected between stated preferences and observed behavior, reserved for a future shift-close reconciliation UI. Auth-gated; ownership-verified.
 
 ---
 
@@ -531,7 +535,7 @@ the SESSIONS.md entry is short — but it still exists.
 
 15. ~~**Clinical decision tool surfacing engine**~~ ✅ Engine + UI complete (live audio wiring deferred). `src/lib/clinicalSurfacing.ts`, `/api/clinical-surfacing` SSE route, 6 tools with typed per-tool pre-fill, `RobinInsightsPanel` renders surfacings, 18-fixture eval suite at 18/18 PASS deterministic at temp 0, bonus over-fire regression on 13 MDM fixtures shows clean discrimination. Live audio wiring into `useShiftAmbient` lands with item 19 so engagement tracking is wired from day one.
 16. ~~**Differential expander**~~ ✅ Engine + UI complete (live audio wiring deferred). `src/lib/differentialExpander.ts`, `/api/differential-expander` SSE route, badness × pretest ranking, cap of 4 adds per call, 12-fixture eval at 12/12 deterministic at temp 0 (6 trigger: PE, SAH, AAA, HELLP, ectopic, dissection; 6 non-trigger: vasovagal, STEMI cath, URI, PE-already-covered, mech back, ankle). `RobinInsightsPanel` renders "Consider also" section below surfaced tools, with badness dot accent per entry.
-16.5. **Memory architecture audit + write paths (encounter / shift / longitudinal)** — audit doc shipped at `/docs/memory-architecture.md`. Migration 006 adds `physicians.robin_longitudinal`. Types + `src/lib/memory.ts` helpers landed. Writers wired next commit; aggregator + reader wired commit after. See audit doc for full design.
+16.5. ~~**Memory architecture audit + write paths**~~ ✅ Full build shipped across 4 commits. `/docs/memory-architecture.md` + migration 006 + types + `src/lib/memory.ts` helpers + writers in 5 routes + `/api/shift/close` aggregator + typed `translateShiftMemory` / `translateLongitudinal` readers (threshold-gated: `gaps_by_type[x] >= 3` mid-shift, `shifts_observed >= 5` for longitudinal). Preference-vs-longitudinal reconciliation policy documented + delta detection live (em_posture vs coding, gap_sensitivity vs chronic misses). Engagement signals stay 0 until item 19's surfacing_events table — schema forward-compat.
 17. **Documentation completeness tracker** — `src/lib/documentationCompleteness.ts`, per-encounter checklist (PE, EKG, MDM, return precautions, dispo, ROS), surfaces at MDM-dictation-start or end-encounter only.
 18. **Preferences expansion** — per-category documentation reminder toggles + clinical surfacing aggressiveness toggles. Update `RobinPreferences` interface and `translatePreferences()`. Update onboarding interview to ask the new questions.
 19. **Surfacing event logging** — every surfacing event written to a new `surfacing_events` table with `timestamp`, `encounter_id`, `surface_type`, `tool_name | diagnosis_name`, `engaged_at`, `dismissed_at`. Powers v2 tuning + design partner pitch material.
