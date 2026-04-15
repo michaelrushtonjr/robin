@@ -9,6 +9,35 @@ Keep each entry tight — 5–10 lines max. This is a log, not documentation.
 
 ## Sessions
 
+### 2026-04-14 — Differential expander (item 16, commit 2/4)
+**Built:**
+- `src/lib/differentialExpander.ts` — `runDifferentialExpander()` pure function. Two tools: `add_differential` (0+ calls, hard cap 4) → `done_expanding` (exactly once). System prompt mirrors clinical surfacing's discipline (THE RATIONALE TEST meta-rule) plus three differential-specific guards: don't re-add what the physician named, don't speculate without presentation-specific support, badness beats probability. Result sorted by `badness_if_missed` (life_threatening → serious → benign) then `pretest_probability` (common → uncommon → rare) for panel display.
+- `src/app/api/differential-expander/route.ts` — thin SSE wrapper, auth-gated, `x-robin-eval: 1` opt-in for temp 0. Mirrors `/api/clinical-surfacing` exactly.
+- `src/components/RobinInsightsPanel.tsx` — new `DifferentialCard` component with badness-dot accent (red = life-threatening, amber = serious, muted = benign). "Consider also" section renders below surfaced tools, above HPI. `RobinAuditState.differentials` hydrated from `differential_added` events (wiring deferred to commit 3).
+- `evals/differential/{rubric,runDifferentialEvals}.ts` + 12 fixtures — substring diagnosis matching, per-add badness assertions, `maxAdded` cap per fixture (defaults to 4, 0 for silent-required cases).
+
+**Validated:**
+- **12/12 PASS** at temperature 0 on two consecutive runs in ~10–13s.
+- Trigger cases (6/6): PE on pleuritic+tachy+long-flight, SAH on thunderclap + vomiting + neck stiffness, AAA on elderly smoker with abrupt flank pain + hypotension, preeclampsia/HELLP on pregnant RUQ+HA+HTN, ectopic on reproductive-age RLQ with no bHCG, dissection on migrating CP with BP arm asymmetry.
+- Non-trigger cases (6/6): classic vasovagal (0 adds), STEMI cath lab active (0 adds), toddler URI (0 adds), PE already named + CTA ordered (0 adds of PE), young mechanical back no red flags (0 adds), simple ankle sprain (0 adds).
+
+**Decided:**
+- Separate route from `/api/clinical-surfacing`. Different eval shape (diagnosis strings vs. typed tool pre-fills) and different over-fire failure modes. Keeps tuning surfaces independent.
+- Hard cap of 4 adds per call. More than 4 is noise — physicians ignore noisy panels. System prompt enforces this and the engine enforces it as a second layer.
+- Sort order: badness-first, pretest-second. Panel leads with life-threatening must-not-miss diagnoses regardless of how common they are. Raw insertion order preserved in `result.events` for debugging.
+- THE RATIONALE TEST meta-rule reused from clinical surfacing — this was the highest-leverage edit there and it transfers cleanly. "If your rationale undercuts itself, don't add."
+- Panel palette: neutral `surface2` card with a badness-colored dot (reusing `--robin` / `--amber` / `--muted`). Distinct from clinical-surfacing teal. Cooler palette signals "observational ddx note" vs. "actionable tool to consider running."
+- Silence is a valid and common output — 5 of 12 fixtures correctly add zero. Engine emits `expanding_done` regardless so the consumer always sees a terminal event.
+
+**Deferred:**
+- Live audio wiring into `useShiftAmbient` — lands with item 19's `surfacing_events` table so engagement tracking works from the first live add, not a retrofit. Matches the clinical-surfacing pattern.
+- Shift-memory writer for differentials (`appendShiftMemoryDifferential` + `appendEncounterDifferential` helpers already exist in `src/lib/memory.ts`) — wired in commit 3.
+- Firing differential-expander on disposition (parallel to robin-think) — deferred along with clinical-surfacing's equivalent wiring, for consistency.
+
+**Next:** Commit 3 — wire writers (robin-think, clinical-surfacing, differential-expander, agent/act, note-finalize) to shift memory + encounter memory via the `src/lib/memory.ts` helpers.
+
+---
+
 ### 2026-04-14 — Memory architecture audit + foundations (item 16.5, commit 1/4)
 **Built:**
 - `/docs/memory-architecture.md` — full audit of the three existing memory tiers (`encounters.mdm_data`, `shifts.robin_memory`, `physicians.robin_preferences`) plus the proposed fourth (`physicians.robin_longitudinal`). Documents current state, proposed schemas, write paths per source route, read paths, preference↔longitudinal reconciliation policy, implementation order, open questions.

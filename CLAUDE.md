@@ -89,6 +89,7 @@ E&M billing reconciliation, mid-shift audits, and post-discharge voice callbacks
       /agent/undo/                ← Voice undo — restores previous_state from robin_actions
       /agent/procedure-qa/        ← Procedure Q&A — 5 procedure types, KB-driven question sequences
       /clinical-surfacing/route.ts ← Loop A — clinical decision tool surfacing (SSE, 6 tools, typed per-tool pre-fill)
+      /differential-expander/route.ts ← Loop A — differential expander (SSE, badness × pretest ranking)
       /onboarding-interview/      ← Streaming interview chat for physician onboarding (Layer 2)
       /physician/preferences/     ← Save physician preferences (POST, auth-gated)
       /note/section/              ← PATCH — update a specific note section (conflict detection)
@@ -129,6 +130,7 @@ E&M billing reconciliation, mid-shift audits, and post-discharge voice callbacks
     robinSystemPrompt.ts          ← System prompt for note generation
     robinThink.ts                 ← runRobinThink() — pure function, full MDM audit pipeline (system prompt, tools, Claude loop, deriveOverallMDM guardrail). Imported by /api/robin-think and /evals.
     clinicalSurfacing.ts          ← runClinicalSurfacing() — Loop A pure function. 6-tool library with TRIGGER + DO NOT SURFACE rules per tool, typed per-tool pre-fill via coercePreFill(). Imported by /api/clinical-surfacing and /evals/surfacing.
+    differentialExpander.ts       ← runDifferentialExpander() — Loop A sibling (item 16). add_differential (cap 4) → done_expanding. Sorts by badness_if_missed then pretest_probability. THE RATIONALE TEST meta-rule. Imported by /api/differential-expander and /evals/differential.
     memory.ts                     ← Memory architecture helpers (item 16.5) — shift memory + longitudinal writers, aggregateShiftToLongitudinal, delta detection
     robinTypes.ts                 ← RobinInsight, RobinAuditState, RobinPreferences, EncounterNote, MDM types, ClinicalToolName, ClinicalToolSurfacing, DifferentialAddition, ShiftMemory, RobinLongitudinal
     mdmScoring.ts                 ← Pure MDM scoring functions: deriveOverallMDM, getNextCode, RVU_MAP
@@ -155,6 +157,10 @@ E&M billing reconciliation, mid-shift audits, and post-discharge voice callbacks
     rubric.ts                     ← scoreSurfacing() — dot-notation pre_fill assertions, substring missing_elements
     runSurfacingEvals.ts          ← `npx tsx evals/surfacing/runSurfacingEvals.ts [filter]` — 18/18 deterministic at temp 0
     runOverfireRegression.ts      ← Bonus regression: runs surfacing engine on 13 MDM fixtures, eyeball over-firing
+  /differential/
+    /fixtures/*.json              ← 12 fixtures (6 trigger: PE, SAH, AAA, HELLP, ectopic, dissection; 6 non-trigger: vasovagal, STEMI cath, URI, PE-covered, mech back, ankle)
+    rubric.ts                     ← scoreDifferential() — substring diagnosis matching, per-add badness assertions, maxAdded cap
+    runDifferentialEvals.ts       ← `npx tsx evals/differential/runDifferentialEvals.ts [filter]` — 12/12 deterministic at temp 0
 ```
 
 ---
@@ -235,6 +241,15 @@ Helpers live in `src/lib/memory.ts`. Write-path pattern: routes stay thin and ca
 ---
 
 ## API Routes — Current Status
+
+### `/api/differential-expander` (SSE POST) — ✅ COMPLETE (engine + UI; live audio wiring deferred)
+Thin SSE wrapper around `runDifferentialExpander()` (in `src/lib/differentialExpander.ts`). Loop A sibling to clinical surfacing (item 16). Silently adds diagnoses the physician hasn't named but the presentation specifically supports. Cap of 4 adds per call. Sorts by `badness_if_missed` (life_threatening → serious → benign) then `pretest_probability` (common → uncommon → rare).
+
+**Tools:** `add_differential` (0+ calls, capped at 4) → `done_expanding` (exactly once)
+**SSE events:** `differential_added` | `expanding_done` | `error`
+**Body:** `{ transcript, chiefComplaint, encounterId?, shiftId? }`
+**Output payload per addition:** `{ diagnosis, pretest_probability, badness_if_missed, rationale, missing_workup[], surface_id, surfaced_at }`
+**Status:** engine 12/12 deterministic at temp 0 (6 trigger + 6 non-trigger fixtures). Over-fire discipline enforced via THE RATIONALE TEST meta-rule. Silence is a valid and common output — 5/12 fixtures correctly add zero differentials.
 
 ### `/api/clinical-surfacing` (SSE POST) — ✅ COMPLETE (engine + UI; live audio wiring deferred)
 Thin SSE wrapper around `runClinicalSurfacing()` (in `src/lib/clinicalSurfacing.ts`). Loop A — clinical decision tool surfacing. Library of 6 tools (HEART, PERC, SF Syncope, Canadian CT Head, Ottawa Ankle, NEXUS). Auth-gated. Per-tool typed pre-fill via server-side `coercePreFill()`. Eval mode opt-in via `x-robin-eval: 1` header.
@@ -515,8 +530,8 @@ the SESSIONS.md entry is short — but it still exists.
 **Active sprint — week of April 13:**
 
 15. ~~**Clinical decision tool surfacing engine**~~ ✅ Engine + UI complete (live audio wiring deferred). `src/lib/clinicalSurfacing.ts`, `/api/clinical-surfacing` SSE route, 6 tools with typed per-tool pre-fill, `RobinInsightsPanel` renders surfacings, 18-fixture eval suite at 18/18 PASS deterministic at temp 0, bonus over-fire regression on 13 MDM fixtures shows clean discrimination. Live audio wiring into `useShiftAmbient` lands with item 19 so engagement tracking is wired from day one.
-16. **Differential expander** — maintain working ddx in encounter state, silently add diagnoses physician hasn't mentioned, render in "consider also" section of insights panel. Can run parallel to #15.
-16.5. **Memory architecture audit + write paths (encounter / shift / longitudinal)** — three tiers exist (`encounters.mdm_data`, `shifts.robin_memory`, `physicians.robin_preferences`) with full read paths but incomplete write paths. `shifts.robin_memory` has no writer at all today. Audit each tier — what's stored, what should be stored, when it's written, when it's read, decay/aggregation rules between tiers — then build the write paths from `robin-think`, clinical surfacing, `agent/act`, and per-shift summaries. Longitudinal memory should accumulate physician-specific patterns over time (chronically missed gap types, coding posture, which surfaced tools engaged vs ignored). Informs items 17, 18, 19. Required before trial shift so memory accumulates real signal during the 9-hour run.
+16. ~~**Differential expander**~~ ✅ Engine + UI complete (live audio wiring deferred). `src/lib/differentialExpander.ts`, `/api/differential-expander` SSE route, badness × pretest ranking, cap of 4 adds per call, 12-fixture eval at 12/12 deterministic at temp 0 (6 trigger: PE, SAH, AAA, HELLP, ectopic, dissection; 6 non-trigger: vasovagal, STEMI cath, URI, PE-already-covered, mech back, ankle). `RobinInsightsPanel` renders "Consider also" section below surfaced tools, with badness dot accent per entry.
+16.5. **Memory architecture audit + write paths (encounter / shift / longitudinal)** — audit doc shipped at `/docs/memory-architecture.md`. Migration 006 adds `physicians.robin_longitudinal`. Types + `src/lib/memory.ts` helpers landed. Writers wired next commit; aggregator + reader wired commit after. See audit doc for full design.
 17. **Documentation completeness tracker** — `src/lib/documentationCompleteness.ts`, per-encounter checklist (PE, EKG, MDM, return precautions, dispo, ROS), surfaces at MDM-dictation-start or end-encounter only.
 18. **Preferences expansion** — per-category documentation reminder toggles + clinical surfacing aggressiveness toggles. Update `RobinPreferences` interface and `translatePreferences()`. Update onboarding interview to ask the new questions.
 19. **Surfacing event logging** — every surfacing event written to a new `surfacing_events` table with `timestamp`, `encounter_id`, `surface_type`, `tool_name | diagnosis_name`, `engaged_at`, `dismissed_at`. Powers v2 tuning + design partner pitch material.

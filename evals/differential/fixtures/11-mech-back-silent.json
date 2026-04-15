@@ -1,0 +1,17 @@
+{
+  "id": "11-mech-back-silent",
+  "description": "Young mechanical back pain, no red flags — no differentials needed",
+  "chiefComplaint": "Lower back pain",
+  "transcript": "Dr. Fisher: Hi, what's going on with your back?\nPatient: I tweaked it moving a couch on Saturday. It's been bothering me for two days.\nDr. Fisher: Where exactly?\nPatient: Right in my lower back, left side. It's pretty achy.\nDr. Fisher: Does the pain go anywhere — down your legs, buttocks?\nPatient: No, just the back itself.\nDr. Fisher: Any numbness, tingling, weakness in your legs?\nPatient: No.\nDr. Fisher: Any problems with bladder or bowel control?\nPatient: No, nothing like that.\nDr. Fisher: Any fever, recent infections, weight loss?\nPatient: No.\nDr. Fisher: IV drug use history?\nPatient: No.\nDr. Fisher: How old are you? Any medical problems?\nPatient: Twenty-nine. Healthy.\nDr. Fisher: Exam — I can reproduce some tenderness at the left paraspinal muscles. Straight leg raise negative bilaterally. Neurologic exam intact, strength 5/5, reflexes 2+, sensation intact. Saddle sensation fine.\nDr. Fisher: This sounds like a muscle strain. No imaging needed — no red flags on history or exam. We'll do some ibuprofen, cyclobenzaprine at bedtime for spasm, heat packs. Most people are significantly better in two to four weeks. Return for new weakness, numbness, bowel or bladder issues, fever, or if the pain is much worse.",
+  "groundTruth": {
+    "expectedAdded": [],
+    "forbiddenAdded": [
+      "cauda equina",
+      "aortic aneurysm",
+      "spinal epidural abscess",
+      "metastasis"
+    ],
+    "maxAdded": 0,
+    "notes": "Young, mechanical trigger, no red flags (no radiation, no neuro deficit, no saddle anesthesia, no fever, no IVDU, no weight loss), normal exam. Textbook benign musculoskeletal back pain. Must-not-miss diagnoses are appropriately excluded by the physician's history and exam. Robin must stay silent. maxAdded=0."
+  }
+}

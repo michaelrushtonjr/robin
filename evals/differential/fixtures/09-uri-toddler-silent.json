@@ -1,0 +1,18 @@
+{
+  "id": "09-uri-toddler-silent",
+  "description": "3yo with URI, well-appearing — no differentials needed",
+  "chiefComplaint": "Cough and runny nose",
+  "transcript": "Dr. Nguyen: Hi Mom, what's going on with Mason today?\nMom: He's had a runny nose and cough for three days. Fever yesterday afternoon around a hundred and one.\nDr. Nguyen: Eating and drinking okay?\nMom: He's eating less than usual but drinking fine.\nDr. Nguyen: Peeing normally?\nMom: Yeah, wet diapers.\nDr. Nguyen: Anybody else at daycare sick?\nMom: Half the class has this.\nDr. Nguyen: Any trouble breathing?\nMom: No, just the cough.\nDr. Nguyen: Ear pain, pulling at ears?\nMom: No.\nDr. Nguyen: Let me take a listen and look in his ears and throat.\nDr. Nguyen: Lungs are clear bilaterally, no retractions, air entry good. Ears look fine — TMs gray, mobile. Throat mildly erythematous without exudate. Tonsils normal. Nose has clear rhinorrhea.\nDr. Nguyen: Mom, this looks like a viral URI. He's well-hydrated and breathing comfortably. Supportive care — saline drops, humidifier, Tylenol for fever if he's uncomfortable. Return precautions: trouble breathing, fever above a hundred and four, not drinking, fewer than four wet diapers in a day, or you're just worried. Otherwise this should run its course in about a week.",
+  "groundTruth": {
+    "expectedAdded": [],
+    "forbiddenAdded": [
+      "pneumonia",
+      "meningitis",
+      "sepsis",
+      "bronchiolitis",
+      "rsv"
+    ],
+    "maxAdded": 0,
+    "notes": "Well-appearing toddler with classic viral URI — history of sick contacts, good PO, good UOP, clear lungs, no retractions, normal exam. This is a minor complaint. Not a must-not-miss workup scenario. Robin should stay silent. maxAdded=0."
+  }
+}

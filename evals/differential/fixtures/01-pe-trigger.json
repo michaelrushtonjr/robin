@@ -1,0 +1,14 @@
+{
+  "id": "01-pe-trigger",
+  "description": "28M pleuritic CP + tachy + recent long flight; physician workup ignores PE",
+  "chiefComplaint": "Chest pain",
+  "transcript": "Dr. Martinez: Hi, what's going on today?\nPatient: I've had this chest pain since last night. Sharp, mostly on the right side, worse when I take a deep breath.\nDr. Martinez: Any shortness of breath?\nPatient: A little bit, yeah. Feels like I can't get a full breath in.\nDr. Martinez: How old are you?\nPatient: Twenty-eight.\nDr. Martinez: Any medical problems, medications, surgeries?\nPatient: Nothing really. I don't take anything.\nDr. Martinez: Recent travel?\nPatient: I just flew back from Tokyo three days ago. Fourteen hours.\nDr. Martinez: Any leg swelling, calf pain?\nPatient: My left calf has been a little sore, I figured from sitting so long.\nDr. Martinez to nurse: Alright, let's get vitals — I saw heart rate was 110 at triage. Let's do an EKG, CBC, BMP, troponin, chest X-ray. Atypical chest pain in a young guy. We'll see what the workup shows.",
+  "groundTruth": {
+    "expectedAdded": ["pulmonary embolism"],
+    "forbiddenAdded": ["panic", "musculoskeletal", "costochondritis"],
+    "requiredBadness": {
+      "pulmonary embolism": "life_threatening"
+    },
+    "notes": "Classic PE setup — pleuritic CP + tachy + recent long-haul flight + calf tenderness. Physician is ordering generic CP workup (no D-dimer, no CTA) and calling it 'atypical chest pain' without naming PE. Robin must add PE. The calf tenderness is the hook that distinguishes this from general CP."
+  }
+}

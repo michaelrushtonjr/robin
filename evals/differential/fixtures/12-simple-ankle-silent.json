@@ -1,0 +1,17 @@
+{
+  "id": "12-simple-ankle-silent",
+  "description": "19F rolled ankle playing soccer, normal NV exam — no differentials needed",
+  "chiefComplaint": "Ankle pain",
+  "transcript": "Dr. Boyd: Hi, what happened to your ankle?\nPatient: I rolled it playing soccer about three hours ago. Landed wrong after a jump.\nDr. Boyd: Inversion or eversion?\nPatient: Inversion — my foot rolled inward.\nDr. Boyd: Heard a pop?\nPatient: Kind of a pop, yeah.\nDr. Boyd: Could you walk on it after?\nPatient: I limped off the field. I've been hobbling.\nDr. Boyd: Any other injuries? Hit your head? Anything else?\nPatient: No, just the ankle.\nDr. Boyd: How old are you?\nPatient: Nineteen.\nDr. Boyd: Any medical problems, previous ankle injuries?\nPatient: No. I sprained the same ankle two years ago but nothing since.\nDr. Boyd: Exam — swelling over the lateral malleolus, tenderness along the anterior talofibular ligament. No tenderness at the posterior edge of either malleolus, no tenderness at the base of the fifth metatarsal or the navicular. Can bear weight for four steps with a limp. Neurologic exam intact distally, pulses 2+, sensation intact. No skin break.\nDr. Boyd: By Ottawa Ankle Rules, no imaging needed. Looks like a grade 1 to 2 lateral ankle sprain. RICE protocol — rest, ice, compression, elevation. Tylenol or ibuprofen. Crutches if needed for comfort. Follow up with sports medicine or your PCP if not significantly better in two weeks.",
+  "groundTruth": {
+    "expectedAdded": [],
+    "forbiddenAdded": [
+      "syndesmotic",
+      "achilles",
+      "osteochondral",
+      "compartment syndrome"
+    ],
+    "maxAdded": 1,
+    "notes": "Classic mechanical ankle sprain in a young athlete. Negative Ottawa rules on exam, intact neurovascular exam, no other complaints. Not a must-not-miss scenario. Robin should stay silent. Allowing maxAdded=1 in case the engine considers syndesmotic injury briefly, but major must-miss fires are forbidden."
+  }
+}

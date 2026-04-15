@@ -1,0 +1,14 @@
+{
+  "id": "05-ectopic-trigger",
+  "description": "26F RLQ pain, physician calling appendicitis without bHCG",
+  "chiefComplaint": "Right lower quadrant pain",
+  "transcript": "Dr. Okafor: Hi, what's going on?\nPatient: I've had this pain in my lower right belly since this morning. It's been getting worse.\nDr. Okafor: How bad is it?\nPatient: Maybe a seven or eight.\nDr. Okafor: Anything make it better or worse?\nPatient: It's worse when I move. Walking hurts.\nDr. Okafor: Any nausea, vomiting?\nPatient: I feel a little nauseous.\nDr. Okafor: Fever?\nPatient: I don't think so.\nDr. Okafor: How old are you?\nPatient: Twenty-six.\nDr. Okafor: Any medical problems, surgeries?\nPatient: I had my gallbladder out two years ago. That's it.\nDr. Okafor: Any urinary symptoms?\nPatient: No.\nDr. Okafor to nurse: Exam shows RLQ tenderness with some voluntary guarding, negative Rovsing, negative psoas. Let's get a CBC, BMP, UA, CT abdomen and pelvis with IV contrast. Sounds like appendicitis — get surgery on the phone for a consult.",
+  "groundTruth": {
+    "expectedAdded": ["ectopic"],
+    "forbiddenAdded": ["diverticulitis", "kidney stone", "pyelonephritis"],
+    "requiredBadness": {
+      "ectopic": "life_threatening"
+    },
+    "notes": "Reproductive-age woman with RLQ pain — ectopic must be on differential and ruled out with bHCG before CT. Physician ordered UA but not bHCG, called appendicitis, going to CT with contrast. bHCG not mentioned in orders. Robin must add ectopic."
+  }
+}

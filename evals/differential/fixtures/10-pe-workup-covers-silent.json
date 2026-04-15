@@ -1,0 +1,12 @@
+{
+  "id": "10-pe-workup-covers-silent",
+  "description": "Physician explicitly names PE AND orders full PE workup — don't re-add",
+  "chiefComplaint": "Chest pain",
+  "transcript": "Dr. Alvarez: Hi, what's going on?\nPatient: Chest pain and shortness of breath. Started this morning.\nDr. Alvarez: Sharp or pressure?\nPatient: Sharp, worse with breathing.\nDr. Alvarez: Any recent surgery, immobilization, travel?\nPatient: I had knee surgery three weeks ago.\nDr. Alvarez: How old are you? Any medical problems?\nPatient: Forty-four. I take a blood pressure medication.\nDr. Alvarez: Leg pain, swelling?\nPatient: My right calf has been kind of tight.\nDr. Alvarez to nurse: Alright, I'm worried about PE given the recent surgery and the pleuritic pain. Let's get an EKG, troponin, CBC, BMP, D-dimer, and if that's elevated we'll go straight to CTA chest. Actually let's just order the CTA chest — he's high pretest. Wells score is elevated. Lower extremity ultrasound too if the CTA is delayed.\nNurse: Got it, CTA and LE ultrasound ordered.\nDr. Alvarez: And let's get him on oxygen, 2 liters nasal cannula for comfort.",
+  "groundTruth": {
+    "expectedAdded": [],
+    "forbiddenAdded": ["pulmonary embolism"],
+    "maxAdded": 1,
+    "notes": "Physician explicitly says 'I'm worried about PE' and orders CTA chest + LE ultrasound. Workup already covers PE. Robin must NOT re-add PE — that would be duplicative noise and train the physician to ignore the panel. Allows 1 optional low-stakes add (e.g. dissection consideration) but PE itself is forbidden."
+  }
+}

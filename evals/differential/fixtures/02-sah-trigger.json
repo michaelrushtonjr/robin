@@ -1,0 +1,14 @@
+{
+  "id": "02-sah-trigger",
+  "description": "34F thunderclap HA worst-of-life; physician treating as migraine",
+  "chiefComplaint": "Headache",
+  "transcript": "Dr. Chen: Hi, tell me about your headache.\nPatient: It came on so fast. I was just sitting on the couch watching TV and it hit me like a thunderclap. Like, the worst headache I've ever had in my life.\nDr. Chen: When was this?\nPatient: About two hours ago. It's still pretty bad.\nDr. Chen: Any nausea, vomiting?\nPatient: Yeah, I threw up once at home.\nDr. Chen: Do you get migraines?\nPatient: I get headaches sometimes, but nothing like this.\nDr. Chen: Any vision changes, weakness?\nPatient: My vision has been a little blurry.\nDr. Chen: Neck pain, stiffness?\nPatient: My neck is a little sore.\nDr. Chen: Any fever?\nPatient: No.\nDr. Chen: Any medical problems?\nPatient: Just anxiety, I take lexapro.\nDr. Chen: Alright, this sounds like a migraine. Let's get you some Zofran for the nausea, a liter of normal saline, and Toradol 15 IV. We'll see how you do in an hour. If you're better we'll get you out of here.",
+  "groundTruth": {
+    "expectedAdded": ["subarachnoid hemorrhage"],
+    "forbiddenAdded": ["tension headache", "cluster headache", "sinusitis"],
+    "requiredBadness": {
+      "subarachnoid hemorrhage": "life_threatening"
+    },
+    "notes": "Thunderclap, worst-of-life, sudden onset, vomiting, neck stiffness — textbook SAH. Physician is treating empirically as migraine without naming SAH or ordering CT head. Must-not-miss. Robin must add SAH with life_threatening badness."
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "id": "07-vasovagal-silent",
+  "description": "22F classic benign vasovagal with clear prodrome during blood draw",
+  "chiefComplaint": "Syncope",
+  "transcript": "Dr. Kim: Hi, what happened?\nPatient: I passed out getting my blood drawn at the lab this morning. I'm feeling fine now.\nDr. Kim: What were you there for?\nPatient: Just routine labs for my annual.\nDr. Kim: What happened right before you passed out?\nPatient: The phlebotomist put the needle in and I started feeling hot and sweaty. My vision got tunnel-y. I told her I felt funny and the next thing I knew I was on the floor.\nDr. Kim: How long were you out?\nPatient: The lab tech said maybe fifteen seconds.\nDr. Kim: How did you feel when you woke up?\nPatient: Kind of groggy for a minute, then okay. I've been fine since.\nDr. Kim: Has this ever happened before?\nPatient: Yeah, actually — I passed out once in high school during a shot at the doctor's office.\nDr. Kim: Any chest pain, palpitations, shortness of breath today?\nPatient: No, nothing.\nDr. Kim: How old are you? Any medical problems?\nPatient: Twenty-two. I'm healthy.\nDr. Kim: Alright, this sounds like a classic vasovagal episode — the prodrome, the trigger, the quick recovery. I'll get an EKG just to be thorough but I expect to send you home.",
+  "groundTruth": {
+    "expectedAdded": [],
+    "forbiddenAdded": [
+      "pulmonary embolism",
+      "arrhythmia",
+      "aortic stenosis",
+      "seizure",
+      "cardiac syncope"
+    ],
+    "maxAdded": 1,
+    "notes": "Textbook benign vasovagal: young, healthy, clear trigger (blood draw), classic prodrome (warm/sweaty/tunnel vision), rapid recovery, prior identical episode. Physician has appropriate workup. Robin should stay silent. Single speculative add tolerated but any must-not-miss over-fire is a fail."
+  }
+}

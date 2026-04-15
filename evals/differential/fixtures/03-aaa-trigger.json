@@ -1,0 +1,14 @@
+{
+  "id": "03-aaa-trigger",
+  "description": "72M abrupt flank pain + HR 110 BP 85; physician calling it renal colic",
+  "chiefComplaint": "Flank pain",
+  "transcript": "Dr. Wu: What's going on tonight?\nPatient: Sudden pain in my left side, really bad.\nDr. Wu: When did it start?\nPatient: About an hour and a half ago. Out of nowhere.\nDr. Wu: Any radiation?\nPatient: Kind of into my back and down toward my groin.\nDr. Wu: Any nausea?\nPatient: A little.\nDr. Wu: Blood in your urine?\nPatient: I don't know, I haven't gone.\nDr. Wu: How old are you?\nPatient: Seventy-two.\nDr. Wu: Any medical problems?\nPatient: High blood pressure, high cholesterol. I smoke.\nDr. Wu: How long have you smoked?\nPatient: About fifty years.\nDr. Wu: Any history of kidney stones?\nPatient: No, never.\nDr. Wu to nurse: Vitals — heart rate 110, blood pressure 85 over 52. Let's bolus a liter of saline, CBC, BMP, UA. Probably a first-time kidney stone. Let's get a CT abdomen non-contrast, stone protocol.",
+  "groundTruth": {
+    "expectedAdded": ["aortic"],
+    "forbiddenAdded": ["pyelonephritis", "diverticulitis"],
+    "requiredBadness": {
+      "aortic": "life_threatening"
+    },
+    "notes": "Elderly smoker, sudden flank pain, hypotensive and tachycardic — AAA rupture until proven otherwise. Physician is calling first-time renal colic and ordering stone-protocol non-contrast CT, which would miss AAA."
+  }
+}

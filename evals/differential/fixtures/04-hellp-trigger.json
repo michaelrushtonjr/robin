@@ -1,0 +1,15 @@
+{
+  "id": "04-hellp-trigger",
+  "description": "32F 28wk pregnant + RUQ pain + BP 162/98 + HA; physician calling cholecystitis",
+  "chiefComplaint": "Right upper quadrant pain",
+  "transcript": "Dr. Patel: Hi, what brings you in?\nPatient: I've been having this bad pain under my right ribs for about six hours. And a really bad headache.\nPatient: I'm also twenty-eight weeks pregnant.\nDr. Patel: Okay. Any nausea, vomiting?\nPatient: Yeah, I threw up twice.\nDr. Patel: Fever?\nPatient: No.\nDr. Patel: Is this your first pregnancy?\nPatient: Second. First one was fine.\nDr. Patel: Any issues this pregnancy?\nPatient: My OB said my blood pressure was creeping up at my last visit. That was two weeks ago.\nDr. Patel: Any swelling in your hands or feet?\nPatient: Yeah, my hands have been kind of puffy the last few days.\nDr. Patel: Any vision changes?\nPatient: Little blurry, kind of.\nDr. Patel to nurse: Vitals — BP 162 over 98, heart rate 92, fetal heart tones 145. Let's get a CBC, BMP, LFTs, lipase, UA, and a RUQ ultrasound. I'm thinking cholecystitis given the pain pattern. We'll also call OB to see the patient.",
+  "groundTruth": {
+    "expectedAdded": ["preeclampsia"],
+    "forbiddenAdded": ["gastritis", "biliary colic"],
+    "requiredBadness": {
+      "preeclampsia": "life_threatening"
+    },
+    "maxAdded": 4,
+    "notes": "Pregnant (28wk) + RUQ pain + headache + hypertension + visual changes + hand swelling = preeclampsia/HELLP until proven otherwise. Physician is calling cholecystitis with RUQ US, missing the big pattern. LFTs were ordered which helps, but the differential itself needs to be named. Accept either 'preeclampsia' or 'HELLP' as the matching add; preeclampsia is the broader canonical and almost always the form Robin will use."
+  }
+}

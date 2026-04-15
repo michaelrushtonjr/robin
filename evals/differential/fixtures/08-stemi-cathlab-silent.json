@@ -1,0 +1,17 @@
+{
+  "id": "08-stemi-cathlab-silent",
+  "description": "Clear STEMI, cath lab activated — no pile-on differentials",
+  "chiefComplaint": "Chest pain",
+  "transcript": "Dr. Reyes: Severe chest pain, crushing, radiating to left arm, started twenty minutes ago. History of diabetes, hypertension, father had MI at sixty. 62-year-old male. Diaphoretic on arrival. EKG shows 3mm ST elevation in V2-V4 with reciprocal changes in II, III, aVF — anterior STEMI.\nDr. Reyes to nurse: Activate the cath lab. Door-to-balloon clock is running. Aspirin 324 chewed, Brilinta 180, heparin bolus per protocol, troponin, CBC, BMP, type and screen. Get cardiology on the line now. Nitro drip if systolic stays above 100.\nCath lab: Copy, we're ready, ten minutes.\nDr. Reyes: Patient, we're taking you upstairs for a heart cath. You have a heart attack right now and the quickest way to fix it is to open up the artery. Any questions?\nPatient: Just fix me.\nDr. Reyes: We will.",
+  "groundTruth": {
+    "expectedAdded": [],
+    "forbiddenAdded": [
+      "pulmonary embolism",
+      "dissection",
+      "pericarditis",
+      "pneumothorax"
+    ],
+    "maxAdded": 0,
+    "notes": "Clear STEMI with cath lab activated. The decision is made — any differential pile-on is moot and noisy. Robin must stay silent. System prompt explicitly excludes this case ('physician already verbalizing the disposition the rule would inform'). maxAdded=0."
+  }
+}

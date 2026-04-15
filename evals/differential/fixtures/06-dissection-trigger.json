@@ -1,0 +1,14 @@
+{
+  "id": "06-dissection-trigger",
+  "description": "58M tearing chest pain migrating to back, HTN; physician calling ACS",
+  "chiefComplaint": "Chest pain",
+  "transcript": "Dr. Harris: Hi, tell me about your chest pain.\nPatient: It came on really suddenly about forty minutes ago. It felt like something ripped inside me.\nDr. Harris: Can you describe it more?\nPatient: Sharp. Tearing. It started in my chest but now it's between my shoulder blades.\nDr. Harris: It moved?\nPatient: Yeah, it kind of migrated from the front to the back.\nDr. Harris: Any nausea, sweating, shortness of breath?\nPatient: Sweaty, yeah. A little short of breath.\nDr. Harris: How old are you?\nPatient: Fifty-eight.\nDr. Harris: Medical history?\nPatient: High blood pressure, but I haven't been taking my meds.\nDr. Harris: Any family history of heart disease?\nPatient: My dad had a heart attack.\nDr. Harris to nurse: Vitals look — BP 178 over 102 in the right arm, 145 over 88 in the left arm. Heart rate 98. Let's get an EKG, troponin, CBC, BMP, chest X-ray, aspirin 324 chewed. Sounds like ACS given the age and risk factors. Cardiology on the phone.",
+  "groundTruth": {
+    "expectedAdded": ["dissection"],
+    "forbiddenAdded": ["pericarditis", "gerd", "musculoskeletal"],
+    "requiredBadness": {
+      "dissection": "life_threatening"
+    },
+    "notes": "Sudden tearing CP, migrating front-to-back, BP asymmetry between arms (33 mmHg delta) — aortic dissection must be on the differential. Physician is treating as ACS, giving aspirin (which is wrong for dissection — it would worsen bleeding). The arm BP asymmetry is the key signal. Robin must add dissection."
+  }
+}

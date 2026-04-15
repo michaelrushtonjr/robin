@@ -1,8 +1,10 @@
 "use client";
 
 import type {
+  BadnessBucket,
   ClinicalToolName,
   ClinicalToolSurfacing,
+  DifferentialAddition,
   RobinAuditState,
 } from "@/lib/robinTypes";
 
@@ -41,6 +43,76 @@ function ComplexityBadge({ level }: { level: string }) {
     >
       {level}
     </span>
+  );
+}
+
+const BADNESS_DOT: Record<BadnessBucket, string> = {
+  life_threatening: "var(--robin)",
+  serious: "var(--amber)",
+  benign: "var(--muted)",
+};
+
+const BADNESS_LABEL: Record<BadnessBucket, string> = {
+  life_threatening: "can't-miss",
+  serious: "significant",
+  benign: "consider",
+};
+
+function DifferentialCard({ differential }: { differential: DifferentialAddition }) {
+  const dot = BADNESS_DOT[differential.badness_if_missed];
+  const label = BADNESS_LABEL[differential.badness_if_missed];
+  return (
+    <div
+      className="rounded-[10px] border px-3 py-2.5"
+      style={{
+        borderColor: "var(--border)",
+        backgroundColor: "var(--surface2)",
+      }}
+    >
+      <div className="flex items-center justify-between mb-1">
+        <div className="flex items-center gap-1.5">
+          <span
+            className="inline-block h-2 w-2 rounded-full shrink-0"
+            style={{ backgroundColor: dot }}
+          />
+          <span
+            className="text-xs font-bold font-syne"
+            style={{ color: "var(--text)" }}
+          >
+            {differential.diagnosis}
+          </span>
+        </div>
+        <span
+          className="text-[9px] font-space-mono uppercase tracking-wider"
+          style={{ color: "var(--muted)" }}
+        >
+          {label}
+        </span>
+      </div>
+      <p
+        className="text-xs font-syne mb-1.5"
+        style={{ color: "var(--text)" }}
+      >
+        {differential.rationale}
+      </p>
+      {differential.missing_workup.length > 0 && (
+        <div className="flex flex-wrap gap-1">
+          {differential.missing_workup.map((el) => (
+            <span
+              key={el}
+              className="text-[10px] font-space-mono px-1.5 py-0.5 rounded"
+              style={{
+                backgroundColor: "var(--surface)",
+                color: "var(--muted)",
+                border: "1px solid var(--border)",
+              }}
+            >
+              {el}
+            </span>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -104,9 +176,14 @@ function SurfacedToolCard({ surfacing }: { surfacing: ClinicalToolSurfacing }) {
 }
 
 export default function RobinInsightsPanel({ audit }: Props) {
-  const { hpi, mdm, gaps, em, surfacedTools, summary, loading } = audit;
+  const { hpi, mdm, gaps, em, surfacedTools, differentials, summary, loading } = audit;
   const hasData =
-    hpi || mdm || gaps.length > 0 || em || surfacedTools.length > 0;
+    hpi ||
+    mdm ||
+    gaps.length > 0 ||
+    em ||
+    surfacedTools.length > 0 ||
+    differentials.length > 0;
 
   return (
     <div
@@ -166,6 +243,27 @@ export default function RobinInsightsPanel({ audit }: Props) {
       {surfacedTools.map((s) => (
         <SurfacedToolCard key={s.surface_id} surfacing={s} />
       ))}
+
+      {/* ── Consider also — differential expander (Loop A) ──────────────── */}
+      {differentials.length > 0 && (
+        <>
+          <div className="flex items-center gap-2 mt-1">
+            <span
+              className="text-[10px] font-space-mono uppercase tracking-wider"
+              style={{ color: "var(--muted)" }}
+            >
+              Consider also
+            </span>
+            <div
+              className="flex-1 h-px"
+              style={{ backgroundColor: "var(--border)" }}
+            />
+          </div>
+          {differentials.map((d) => (
+            <DifferentialCard key={d.surface_id} differential={d} />
+          ))}
+        </>
+      )}
 
       {/* ── HPI Card ────────────────────────────────────────────────────── */}
       {hpi && (
