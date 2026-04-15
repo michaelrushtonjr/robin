@@ -9,6 +9,35 @@ Keep each entry tight — 5–10 lines max. This is a log, not documentation.
 
 ## Sessions
 
+### 2026-04-14 — Memory writers wired across five routes (item 16.5, commit 3/4)
+**Built:**
+- `src/app/api/robin-think/route.ts` — `onReady` callback extended. After persisting `encounters.mdm_data`, writes shift-memory encounter rollup (`upsertEncounterInShiftMemory`), increments `tally.gaps_by_type` and `tally.codes_distribution`, bumps `observed_patterns.vague_workup_language_count` when that gap fires, and bumps `observed_patterns.critical_care_count` on 99291/99292.
+- `src/app/api/clinical-surfacing/route.ts` — `onEvent` wrapped. On each `clinical_tool_surfaced` event, persists to `encounters.mdm_data.surfacings[]` and appends to the shift-memory rollup's `surfacings_shown[]` + increments `tally.surfacings_by_tool`. SSE forwarding to client happens before persistence (UI responsiveness wins). Memory writes require both `encounterId` and `shiftId`; eval-harness calls skip persistence. Non-fatal on failure.
+- `src/app/api/differential-expander/route.ts` — same pattern as clinical-surfacing. On `differential_added`, persists to `encounters.mdm_data.differentials[]` and `ShiftEncounterRollup.differentials_shown[]`.
+- `src/app/api/agent/act/route.ts` — post-dispatch `detectAndSetDictationStyle` on `physical_exam` commands. Queries `robin_actions` for any other `physical_exam` write in the last 5 minutes for a different encounter in this shift; if present, sets `observed_patterns.dictation_style = "batch_pe"`, otherwise `"per_encounter"`. Fire-and-forget (`void`), non-fatal on failure.
+- `src/app/api/note/finalize/route.ts` — after the finalized note is saved, loads `encounter.mdm_data.gaps[]`, runs `detectAddressedGaps(flaggedTypes, finalizedText)` (heuristic phrase match), and calls `markGapsAddressed()` on the shift-memory rollup.
+- `src/lib/memory.ts` — added `detectAddressedGaps()` + `GAP_ADDRESSED_PHRASES` map for 5 of the 8 gap types (ROS missing, data not documented, risk not documented, disposition rationale absent, return precautions missing). The other 3 (hpi_incomplete, vague_workup_language, other) are intentionally not heuristic-matched — too hard to distinguish reliably. They stay "not addressed" in longitudinal signal, which is the conservative choice.
+
+**Fixed:**
+- `buildRollupFromMdmData()` used `note_gaps` in the foundation commit but the actual `MDMData` type uses `gaps`. Corrected.
+
+**Validated:**
+- `npm run build` passes clean.
+- Differential eval suite: **12/12 PASS** at temp 0 (regression — engines unaffected since writers sit at the route layer).
+- Writers are defensive: every memory-layer exception is swallowed so it can never fail a clinical path (robin-think ready, SSE surfacing event, note finalization).
+
+**Decided:**
+- Memory writes in route handlers, not in lib functions. Keeps `runRobinThink`, `runClinicalSurfacing`, `runDifferentialExpander` pure and independently eval-runnable without a Supabase client.
+- Dictation-style detection uses `robin_actions` audit log (5-minute window, different encounter). Simpler than passing a flag from the client, and it's the single cheapest signal available today. Accurate when batch-PE UI is used; effectively never fires false positives on per-encounter dictation.
+- Gap-addressed heuristic is deliberately conservative (3 of 8 gap types omitted). False negatives are better than false positives for longitudinal signal — overcounting "addressed" makes miss_rate look better than it is and silences legitimate chronically-missed signal.
+- Memory failures are swallowed, not escalated. A lost tally increment is invisible; a broken robin-think or clinical-surfacing response is not. Single-direction safety.
+
+**Deferred:** Commit 4 — `/api/shift/close` aggregator route, updated `endShift()` in shift/page.tsx to call it, `buildRobinContext()` reader updates (typed `translateShiftMemory` + `translateLongitudinal` replacing the loose `Object.entries` dump, with threshold gates at `shifts_observed >= 5` for longitudinal content and `gaps_by_type[x] >= 3` for mid-shift observations).
+
+**Next:** Commit 4 — aggregator + reader. After that lands, the full memory architecture ships end-to-end and the physician's 5+ shift longitudinal signal starts accumulating from the next shift.
+
+---
+
 ### 2026-04-14 — Differential expander (item 16, commit 2/4)
 **Built:**
 - `src/lib/differentialExpander.ts` — `runDifferentialExpander()` pure function. Two tools: `add_differential` (0+ calls, hard cap 4) → `done_expanding` (exactly once). System prompt mirrors clinical surfacing's discipline (THE RATIONALE TEST meta-rule) plus three differential-specific guards: don't re-add what the physician named, don't speculate without presentation-specific support, badness beats probability. Result sorted by `badness_if_missed` (life_threatening → serious → benign) then `pretest_probability` (common → uncommon → rare) for panel display.

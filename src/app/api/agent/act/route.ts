@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { createEmptyNote } from "@/lib/robinTypes";
 import type { EncounterNote } from "@/lib/robinTypes";
+import { setShiftPattern } from "@/lib/memory";
 import Anthropic from "@anthropic-ai/sdk";
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
@@ -147,7 +148,44 @@ export async function POST(request: Request) {
     return Response.json({ error: "Unknown command type" }, { status: 400 });
   }
 
-  return handler();
+  const response = await handler();
+
+  // Shift memory — dictation style observation. Detects batch_pe when
+  // multiple physical_exam writes land across different encounters within
+  // a 5-minute window; otherwise per_encounter. Non-fatal on failure.
+  if (commandType === "physical_exam" && resolvedEncounterId) {
+    void detectAndSetDictationStyle(supabase, shiftId, resolvedEncounterId);
+  }
+
+  return response;
+}
+
+async function detectAndSetDictationStyle(
+  supabase: SupabaseClient,
+  shiftId: string,
+  currentEncounterId: string
+): Promise<void> {
+  try {
+    const sinceIso = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+    const { data } = await supabase
+      .from("robin_actions")
+      .select("encounter_id, created_at")
+      .eq("shift_id", shiftId)
+      .eq("action_type", "physical_exam")
+      .gte("created_at", sinceIso)
+      .neq("encounter_id", currentEncounterId)
+      .limit(1);
+
+    const isBatch = Array.isArray(data) && data.length > 0;
+    await setShiftPattern(
+      supabase,
+      shiftId,
+      "dictation_style",
+      isBatch ? "batch_pe" : "per_encounter"
+    );
+  } catch {
+    // Swallow — pattern detection is advisory, not critical path.
+  }
 }
 
 // ─── Encounter resolution ───────────────────────────────────────────────────

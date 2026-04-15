@@ -1,6 +1,11 @@
 import { createClient } from "@/lib/supabase/server";
 import { buildRobinContext } from "@/lib/robinPersona";
 import { runDifferentialExpander } from "@/lib/differentialExpander";
+import {
+  appendEncounterDifferential,
+  appendShiftMemoryDifferential,
+} from "@/lib/memory";
+import type { DifferentialAddition } from "@/lib/robinTypes";
 
 export async function POST(req: Request) {
   // Auth
@@ -51,7 +56,28 @@ export async function POST(req: Request) {
           chiefComplaint,
           shiftContext,
           evalMode,
-          onEvent: (e) => send(e.type, e.data),
+          onEvent: async (e) => {
+            send(e.type, e.data);
+            if (
+              e.type === "differential_added" &&
+              encounterId &&
+              shiftId
+            ) {
+              const d = e.data as DifferentialAddition;
+              try {
+                await appendEncounterDifferential(supabase, encounterId, d);
+                await appendShiftMemoryDifferential(
+                  supabase,
+                  shiftId,
+                  encounterId,
+                  chiefComplaint,
+                  d
+                );
+              } catch {
+                // Non-fatal — see clinical-surfacing comment.
+              }
+            }
+          },
         });
         controller.close();
       } catch (err) {

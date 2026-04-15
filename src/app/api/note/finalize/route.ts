@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { buildRobinContext } from "@/lib/robinPersona";
 import type { EncounterNote } from "@/lib/robinTypes";
+import { detectAddressedGaps, markGapsAddressed } from "@/lib/memory";
 import Anthropic from "@anthropic-ai/sdk";
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
@@ -25,11 +26,11 @@ export async function POST(request: Request) {
     );
   }
 
-  // Fetch encounter with note
+  // Fetch encounter with note + mdm_data (for gaps-addressed detection)
   const { data: encounter } = await supabase
     .from("encounters")
     .select(
-      "id, shift_id, chief_complaint, note, note_version, transcript, age, gender"
+      "id, shift_id, chief_complaint, note, note_version, transcript, age, gender, mdm_data"
     )
     .eq("id", encounterId)
     .single();
@@ -166,6 +167,26 @@ Rules:
       generated_note: finalizedText,
     })
     .eq("id", encounterId);
+
+  // Shift memory — mark gaps that the finalized note addressed. Non-fatal
+  // on failure (the note save is what matters; memory is advisory).
+  try {
+    const mdmData = encounter.mdm_data as
+      | { gaps?: Array<{ gap_type: string }> }
+      | null;
+    const flaggedTypes = (mdmData?.gaps ?? []).map((g) => g.gap_type);
+    if (flaggedTypes.length > 0) {
+      const addressed = detectAddressedGaps(flaggedTypes, finalizedText);
+      await markGapsAddressed(
+        supabase,
+        encounter.shift_id,
+        encounterId,
+        addressed
+      );
+    }
+  } catch {
+    // Swallow — memory layer is never allowed to fail a finalization.
+  }
 
   return Response.json({
     ok: true,

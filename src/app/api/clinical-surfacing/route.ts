@@ -1,6 +1,12 @@
 import { createClient } from "@/lib/supabase/server";
 import { buildRobinContext } from "@/lib/robinPersona";
 import { runClinicalSurfacing } from "@/lib/clinicalSurfacing";
+import {
+  appendEncounterSurfacing,
+  appendShiftMemorySurfacing,
+  incrementShiftTally,
+} from "@/lib/memory";
+import type { ClinicalToolSurfacing } from "@/lib/robinTypes";
 
 export async function POST(req: Request) {
   // Auth
@@ -51,7 +57,38 @@ export async function POST(req: Request) {
           chiefComplaint,
           shiftContext,
           evalMode,
-          onEvent: (e) => send(e.type, e.data),
+          onEvent: async (e) => {
+            // Forward SSE event to client first — UI responsiveness wins.
+            send(e.type, e.data);
+            // Then persist. encounterId + shiftId are required for
+            // persistence; eval-harness calls don't pass them, so skip.
+            if (
+              e.type === "clinical_tool_surfaced" &&
+              encounterId &&
+              shiftId
+            ) {
+              const s = e.data as ClinicalToolSurfacing;
+              try {
+                await appendEncounterSurfacing(supabase, encounterId, s);
+                await appendShiftMemorySurfacing(
+                  supabase,
+                  shiftId,
+                  encounterId,
+                  chiefComplaint,
+                  s
+                );
+                await incrementShiftTally(
+                  supabase,
+                  shiftId,
+                  "surfacings_by_tool",
+                  s.tool_name
+                );
+              } catch {
+                // Memory-write failure is non-fatal — SSE has already gone
+                // to the client. Silently swallow so the stream stays clean.
+              }
+            }
+          },
         });
         controller.close();
       } catch (err) {

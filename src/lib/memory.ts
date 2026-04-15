@@ -578,6 +578,86 @@ export function humanizeGapType(t: string): string {
   return t.replace(/_/g, " ");
 }
 
+// ─── Gap-addressed heuristic detection (used by note/finalize) ─────────────
+
+/**
+ * Phrases that, if present in the finalized note, indicate the named gap
+ * type has been addressed. Purpose-built for longitudinal signal, not
+ * clinical accuracy — we want to know if the physician meaningfully
+ * addressed the thing Robin flagged at audit time.
+ *
+ * gap_types without heuristic entries (hpi_incomplete, vague_workup_language,
+ * other) are always considered NOT addressed by this function. That's
+ * conservative and keeps longitudinal's miss_rate signal honest.
+ */
+const GAP_ADDRESSED_PHRASES: Record<string, string[]> = {
+  ros_missing: [
+    "review of systems",
+    "ros:",
+    "ros —",
+    "denies fever",
+    "denies chest pain",
+    "otherwise negative",
+  ],
+  data_not_documented: [
+    "reviewed",
+    "results show",
+    "labs show",
+    "lab results",
+    "ct shows",
+    "ekg shows",
+    "interpretation:",
+    "wbc",
+    "lactate",
+    "troponin",
+  ],
+  risk_not_documented: [
+    "moderate risk",
+    "high risk",
+    "low risk",
+    "prescription drug management",
+    "decision regarding hospitalization",
+    "admitted",
+    "admission",
+  ],
+  disposition_rationale_absent: [
+    "disposition:",
+    "dispo:",
+    "discharged home",
+    "admitted to",
+    "appropriate for discharge",
+    "given that",
+    "reason for admission",
+    "discharge criteria met",
+  ],
+  return_precautions_missing: [
+    "return for",
+    "return if",
+    "worsening",
+    "come back if",
+    "red flag",
+    "warning sign",
+    "seek immediate care",
+    "when to return",
+  ],
+};
+
+export function detectAddressedGaps(
+  flaggedTypes: string[],
+  finalizedText: string
+): string[] {
+  const hay = finalizedText.toLowerCase();
+  const addressed: string[] = [];
+  for (const gap_type of flaggedTypes) {
+    const phrases = GAP_ADDRESSED_PHRASES[gap_type];
+    if (!phrases || phrases.length === 0) continue;
+    if (phrases.some((p) => hay.includes(p))) {
+      addressed.push(gap_type);
+    }
+  }
+  return addressed;
+}
+
 // ─── Small helper used by multiple writers ─────────────────────────────────
 
 function stubRollup(
@@ -606,7 +686,7 @@ export function buildRollupFromMdmData(
   chiefComplaint: string,
   mdmData: {
     mdm_scaffold?: { overall_mdm?: MDMComplexity };
-    note_gaps?: Array<{ gap_type: string }>;
+    gaps?: Array<{ gap_type: string }>;
     em_assessment?: { code?: string };
   }
 ): ShiftEncounterRollup {
@@ -616,7 +696,7 @@ export function buildRollupFromMdmData(
     chief_complaint: chiefComplaint,
     code: mdmData.em_assessment?.code ?? null,
     overall_mdm: mdmData.mdm_scaffold?.overall_mdm ?? null,
-    gaps_flagged: (mdmData.note_gaps ?? []).map((g) => g.gap_type),
+    gaps_flagged: (mdmData.gaps ?? []).map((g) => g.gap_type),
     gaps_addressed: [],
     surfacings_shown: [],
     differentials_shown: [],

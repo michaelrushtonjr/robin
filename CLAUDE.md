@@ -261,7 +261,7 @@ Thin SSE wrapper around `runClinicalSurfacing()` (in `src/lib/clinicalSurfacing.
 **Status:** engine 18/18 deterministic at temp 0; over-fire regression on 13 MDM fixtures shows clean discrimination; UI panel renders. Live wiring into `useShiftAmbient` deferred to a separate commit alongside item 19's `surfacing_events` write path.
 
 ### `/api/robin-think` (SSE POST) — ✅ COMPLETE
-Thin SSE wrapper around `runRobinThink()` (in `src/lib/robinThink.ts`). The route handles auth, body parsing, `buildRobinContext()`, SSE encoding, and the `encounters.mdm_data` persist on `ready`. All clinical logic — system prompt, tool definitions, Claude tool-use loop, `deriveOverallMDM` guardrail — lives in the lib so it can also be called directly by `/evals/runEvals.ts`.
+Thin SSE wrapper around `runRobinThink()` (in `src/lib/robinThink.ts`). The route handles auth, body parsing, `buildRobinContext()`, SSE encoding, and the `encounters.mdm_data` persist on `ready`. All clinical logic — system prompt, tool definitions, Claude tool-use loop, `deriveOverallMDM` guardrail — lives in the lib so it can also be called directly by `/evals/runEvals.ts`. **Memory writes on ready:** upserts shift-memory encounter rollup, increments `gaps_by_type` + `codes_distribution` tallies, bumps `vague_workup_language_count` and `critical_care_count` observed patterns.
 
 **Tools (in order):** `hpi_completeness` → `mdm_complexity_assessment` → `note_gap` (0–4×) → `em_assessment` → `ready`
 **SSE events:** `hpi_completeness` | `mdm_scaffold` | `note_gap` | `em_assessment` | `ready` | `done` | `error`
