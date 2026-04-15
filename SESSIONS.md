@@ -9,6 +9,28 @@ Keep each entry tight — 5–10 lines max. This is a log, not documentation.
 
 ## Sessions
 
+### 2026-04-14 — Memory architecture audit + foundations (item 16.5, commit 1/4)
+**Built:**
+- `/docs/memory-architecture.md` — full audit of the three existing memory tiers (`encounters.mdm_data`, `shifts.robin_memory`, `physicians.robin_preferences`) plus the proposed fourth (`physicians.robin_longitudinal`). Documents current state, proposed schemas, write paths per source route, read paths, preference↔longitudinal reconciliation policy, implementation order, open questions.
+- `supabase/migrations/006_memory_architecture.sql` — adds `physicians.robin_longitudinal` jsonb. Flags `shifts.summary` (from migration 001) as deprecated in place.
+- `src/lib/robinTypes.ts` — new types: `DifferentialAddition` + `PretestBucket` + `BadnessBucket` (for item 16), `ShiftMemory` + `ShiftEncounterRollup` + `ShiftObservedPatterns` + `ShiftTally`, `RobinLongitudinal` + `ChronicallyMissedGap` + `ToolEngagementStats` + `PendingObservation`. Factories `createEmptyShiftMemory()` / `createEmptyLongitudinal()`. `RobinAuditState` now includes `differentials: DifferentialAddition[]`.
+- `src/lib/memory.ts` — write-path helpers: `upsertEncounterInShiftMemory`, `incrementShiftTally`, `incrementShiftPatternCount`, `setShiftPattern`, `appendShiftMemorySurfacing`, `appendShiftMemoryDifferential`, `markGapsAddressed`, `appendEncounterSurfacing`, `appendEncounterDifferential`, `buildRollupFromMdmData`, `aggregateShiftToLongitudinal` with delta detection (em_posture vs coding, gap_sensitivity vs chronic misses). Threshold-gated at `shifts_observed >= 5`.
+
+**Fixed:** `RobinAuditState` initialization in encounter page updated to include the new required `differentials: []` field.
+
+**Decided:**
+- New `physicians.robin_longitudinal` column rather than extending `robin_preferences`. Preferences = stated intent (authoritative), longitudinal = observed behavior (never overrides preferences).
+- Engagement signals (`tool_engagement.engaged_count`, `differential_engagement.engaged_count`) stay 0 until item 19's `surfacing_events` table lands. Schema is forward-compatible.
+- `shifts.summary` deprecated in place, not dropped. Zero-cost to leave the column, keeps the door open if a future structured shift-close summary wants it.
+- Race-tolerant `select → modify → update` on shift memory writes. Single-physician-per-shift concurrency makes lost tally increments acceptable.
+- Threshold-gating on longitudinal: delta observations only fire when `shifts_observed >= 5`, and mid-shift commentary only fires when tally counts cross signal thresholds (e.g. `gaps_by_type[x] >= 3`).
+
+**Deferred:** All writer wiring + aggregator route + reader update — scheduled across commits 2–4.
+
+**Next:** Commit 2 — differential expander (item 16): `src/lib/differentialExpander.ts` + `/api/differential-expander` SSE route + panel rendering + 12-fixture eval suite. Then commit 3 (writers wired) and commit 4 (aggregator + reader).
+
+---
+
 ### 2026-04-14 — Clinical decision tool surfacing engine (Loop A) + 18-fixture eval suite
 **Built:**
 - `src/lib/clinicalSurfacing.ts` — `runClinicalSurfacing()` pure function. Library of 6 tools (HEART, PERC, SF Syncope, Canadian CT Head, Ottawa Ankle, NEXUS) with explicit per-tool TRIGGER and DO NOT SURFACE rules. Server-side `coercePreFill()` strips loose JSON to typed per-tool shapes. Emits `clinical_tool_surfaced` / `surfacing_done` / `error` events.

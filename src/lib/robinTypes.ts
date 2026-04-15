@@ -150,6 +150,41 @@ export type ClinicalToolSurfacing = ClinicalToolPreFill & {
   surfaced_at: string;
 };
 
+// ─── Differential expander (Loop A sibling, item 16) ────────────────────────
+
+/**
+ * Pretest probability bucket — how likely this diagnosis is in THIS
+ * presentation (not general population prevalence).
+ */
+export type PretestBucket = "common" | "uncommon" | "rare";
+
+/**
+ * Badness-if-missed bucket — the downside of failing to consider this
+ * diagnosis. "life_threatening" drives surfacing order even when pretest
+ * probability is low: an aortic dissection worth ruling out is worth
+ * ruling out even if rare.
+ */
+export type BadnessBucket = "life_threatening" | "serious" | "benign";
+
+/**
+ * A single diagnosis Robin is suggesting the physician also consider.
+ * Only added when (a) presentation specifically supports it AND (b) the
+ * physician has not already mentioned it in the transcript.
+ *
+ * The `surface_id` matches the ClinicalToolSurfacing.surface_id format
+ * so item 19's surfacing_events table can log engagement for both
+ * Loop A surfaces through the same pathway.
+ */
+export interface DifferentialAddition {
+  diagnosis: string;
+  pretest_probability: PretestBucket;
+  badness_if_missed: BadnessBucket;
+  rationale: string;
+  missing_workup: string[];
+  surface_id: string;
+  surfaced_at: string;
+}
+
 // ─── Robin Audit state (consumed by RobinInsightsPanel) ──────────────────────
 
 export interface RobinAuditState {
@@ -171,6 +206,8 @@ export interface RobinAuditState {
   };
   /** Clinical decision tools surfaced for this encounter. */
   surfacedTools: ClinicalToolSurfacing[];
+  /** Differentials Robin has added (dx the physician didn't mention). */
+  differentials: DifferentialAddition[];
   summary?: string;
   loading: boolean;
 }
@@ -338,5 +375,154 @@ export function createEmptyNote(): EncounterNote {
     created_at: new Date().toISOString(),
     finalized_at: null,
     note_version: 1,
+  };
+}
+
+// ─── Memory architecture (item 16.5) ────────────────────────────────────────
+//
+// Three tiers today (+ one proposed). See /docs/memory-architecture.md:
+//   Tier 1: encounters.mdm_data           — encounter-level
+//   Tier 2: shifts.robin_memory           — shift-level
+//   Tier 3a: physicians.robin_preferences — longitudinal, stated intent
+//   Tier 3b: physicians.robin_longitudinal — longitudinal, observed behavior
+
+// ─── Tier 2: Shift memory ───────────────────────────────────────────────────
+
+export interface ShiftEncounterRollup {
+  encounter_id: string;
+  chief_complaint: string;
+  code: string | null;
+  overall_mdm: MDMComplexity | null;
+  /** Gap types flagged by robin-think. */
+  gaps_flagged: string[];
+  /** Gap types believed addressed at note finalization (heuristic match). */
+  gaps_addressed: string[];
+  surfacings_shown: Array<{
+    surface_id: string;
+    tool_name: ClinicalToolName;
+  }>;
+  differentials_shown: Array<{
+    surface_id: string;
+    diagnosis: string;
+  }>;
+  finalized_at: string | null;
+  last_updated_at: string;
+}
+
+export interface ShiftObservedPatterns {
+  dictation_style?: "batch_pe" | "per_encounter";
+  vague_workup_language_count: number;
+  critical_care_count: number;
+}
+
+export interface ShiftTally {
+  gaps_by_type: Record<string, number>;
+  surfacings_by_tool: Partial<Record<ClinicalToolName, number>>;
+  codes_distribution: Record<string, number>;
+}
+
+export interface ShiftMemory {
+  encounters_this_shift: ShiftEncounterRollup[];
+  observed_patterns: ShiftObservedPatterns;
+  tally: ShiftTally;
+  version: 1;
+}
+
+export function createEmptyShiftMemory(): ShiftMemory {
+  return {
+    encounters_this_shift: [],
+    observed_patterns: {
+      vague_workup_language_count: 0,
+      critical_care_count: 0,
+    },
+    tally: {
+      gaps_by_type: {},
+      surfacings_by_tool: {},
+      codes_distribution: {},
+    },
+    version: 1,
+  };
+}
+
+// ─── Tier 3b: Longitudinal memory (Robin's observations across shifts) ──────
+
+export interface ChronicallyMissedGap {
+  gap_type: string;
+  /** Flagged-but-not-addressed rate across finalized notes. */
+  miss_rate: number;
+  encounter_count: number;
+  last_seen: string;
+}
+
+export interface ToolEngagementStats {
+  surfaced_count: number;
+  /** Populated once item 19's surfacing_events table ships. Stays 0 until. */
+  engaged_count: number;
+  engagement_rate: number;
+}
+
+/**
+ * A delta Robin observed between stated preferences and observed behavior.
+ * Surfaces only at reconciliation moments (shift close, settings). Never
+ * used to silently override a preference.
+ */
+export interface PendingObservation {
+  id: string;
+  observation: string;
+  flagged_at: string;
+  resolved_at: string | null;
+  resolution: "updated_preference" | "dismissed" | null;
+}
+
+export interface RobinLongitudinal {
+  shifts_observed: number;
+  encounters_observed: number;
+
+  coding_distribution: {
+    counts: Record<string, number>;
+    critical_care_rate: number;
+  };
+
+  chronically_missed_gaps: ChronicallyMissedGap[];
+
+  tool_engagement: Partial<Record<ClinicalToolName, ToolEngagementStats>>;
+
+  differential_engagement: {
+    added_count: number;
+    engaged_count: number;
+  };
+
+  agent_act_patterns: {
+    batch_pe_shift_count: number;
+    per_encounter_shift_count: number;
+  };
+
+  pending_observations: PendingObservation[];
+
+  last_aggregated_at: string;
+  version: 1;
+}
+
+export function createEmptyLongitudinal(): RobinLongitudinal {
+  return {
+    shifts_observed: 0,
+    encounters_observed: 0,
+    coding_distribution: {
+      counts: {},
+      critical_care_rate: 0,
+    },
+    chronically_missed_gaps: [],
+    tool_engagement: {},
+    differential_engagement: {
+      added_count: 0,
+      engaged_count: 0,
+    },
+    agent_act_patterns: {
+      batch_pe_shift_count: 0,
+      per_encounter_shift_count: 0,
+    },
+    pending_observations: [],
+    last_aggregated_at: new Date(0).toISOString(),
+    version: 1,
   };
 }

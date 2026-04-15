@@ -129,7 +129,8 @@ E&M billing reconciliation, mid-shift audits, and post-discharge voice callbacks
     robinSystemPrompt.ts          ← System prompt for note generation
     robinThink.ts                 ← runRobinThink() — pure function, full MDM audit pipeline (system prompt, tools, Claude loop, deriveOverallMDM guardrail). Imported by /api/robin-think and /evals.
     clinicalSurfacing.ts          ← runClinicalSurfacing() — Loop A pure function. 6-tool library with TRIGGER + DO NOT SURFACE rules per tool, typed per-tool pre-fill via coercePreFill(). Imported by /api/clinical-surfacing and /evals/surfacing.
-    robinTypes.ts                 ← RobinInsight, RobinAuditState, RobinPreferences, EncounterNote, MDM types, ClinicalToolName, ClinicalToolSurfacing
+    memory.ts                     ← Memory architecture helpers (item 16.5) — shift memory + longitudinal writers, aggregateShiftToLongitudinal, delta detection
+    robinTypes.ts                 ← RobinInsight, RobinAuditState, RobinPreferences, EncounterNote, MDM types, ClinicalToolName, ClinicalToolSurfacing, DifferentialAddition, ShiftMemory, RobinLongitudinal
     mdmScoring.ts                 ← Pure MDM scoring functions: deriveOverallMDM, getNextCode, RVU_MAP
     /supabase
       client.ts                   ← Browser Supabase client
@@ -138,9 +139,10 @@ E&M billing reconciliation, mid-shift audits, and post-discharge voice callbacks
 /supabase/migrations
   001_initial_schema.sql          ← physicians, shifts, encounters + RLS
   002_encounter_demographics.sql  ← age, gender columns
-  003_robin_chat.sql              ← Chat history table
+  003_robin_chat.sql              ← Chat history table + robin_preferences + robin_memory
   004_layer1_ambient_command.sql  ← robin_actions table + encounter columns (Layer 1)
   005_note_dashboard.sql          ← note jsonb + note_version columns on encounters
+  006_memory_architecture.sql     ← physicians.robin_longitudinal jsonb (item 16.5)
 /docs
   agent-roster.md                 ← Full agent definitions
   robin-agentic-spec.md           ← Master agentic capability spec (Layers 1–3, Note Dashboard, Living Note)
@@ -216,16 +218,19 @@ E&M billing reconciliation, mid-shift audits, and post-discharge voice callbacks
 
 ---
 
-## Memory Architecture (4 Layers)
+## Memory Architecture (item 16.5 — see `/docs/memory-architecture.md` for the full design)
 
-| Layer | Storage | Fed Into |
-|---|---|---|
-| Working memory | LLM context window | Every API call |
-| Shift memory | `shifts.robin_memory` jsonb | `buildRobinContext()` → robin-chat |
-| Physician profile | `physicians.robin_preferences` jsonb | `buildRobinContext()` → robin-chat |
-| Clinical KB | `robinSystemPrompt.ts` (static) | `generate-note`, `robin-think` |
+| Tier | Storage | Scope | Writers |
+|---|---|---|---|
+| 1 — Encounter | `encounters.mdm_data` jsonb | Per encounter | robin-think, clinical-surfacing, differential-expander, agent/act |
+| 2 — Shift | `shifts.robin_memory` jsonb | Per shift | robin-think, clinical-surfacing, differential-expander, agent/act, note/finalize |
+| 3a — Stated intent | `physicians.robin_preferences` jsonb | Longitudinal | onboarding interview (once) |
+| 3b — Observed behavior | `physicians.robin_longitudinal` jsonb | Longitudinal | `/api/shift/close` aggregator |
+| Clinical KB | `robinSystemPrompt.ts` (static) | Global | — |
 
-**Gap resolved:** `robin-think` now calls `buildRobinContext()` and receives full shift memory + physician profile alongside `transcript`, `chiefComplaint`, `disposition`, `encounterId`, and `shiftId`.
+**Reconciliation policy:** Preferences always win for Robin's behavior (what to surface, how aggressive). Longitudinal informs content only in moments Robin already fires. Deltas (observed behavior diverging from stated intent) surface only at reconciliation moments (shift close, settings) as `pending_observations` — never silently overriding preferences. Threshold: `shifts_observed >= 5` before longitudinal affects content.
+
+Helpers live in `src/lib/memory.ts`. Write-path pattern: routes stay thin and call helpers, not Supabase directly.
 
 ---
 
