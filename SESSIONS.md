@@ -9,6 +9,25 @@ Keep each entry tight — 5–10 lines max. This is a log, not documentation.
 
 ## Sessions
 
+### 2026-04-21 — BAA strategy pivot to AWS Bedrock + migration plan
+**Built:**
+- `docs/bedrock-migration-plan.md` — engineering scoping doc (~280 lines). AWS prerequisites (account → Artifact BAA → model access → least-privilege IAM policy), `src/lib/llmClient.ts` wrapper design with full code sketch + `MODEL_MAP` + `LLM_PROVIDER` env var selector, enumeration of all 13 Claude call sites across the codebase, day-by-day execution sequence, validation plan (13/13 MDM + 18/18 surfacing + 12/12 differential eval suites at temp 0 in both providers), rollback plan (`fly secrets set LLM_PROVIDER=anthropic`), risk register, open follow-ups.
+- `baa-concierge/references/BAA_TRACKER.md` — rewritten. Added "Strategic Shift" header section. Reordered priority: Fly.io → AWS Bedrock → Supabase → Deepgram → (Anthropic direct, deprioritized). Full AWS Bedrock vendor block with IAM policy example. Anthropic direct marked DEPRIORITIZED (two unanswered outreach attempts; Claude for Healthcare launch routes healthcare BAAs through AWS/GCP/Azure). Deepgram status corrected (Michael replied 2026-04-14). Outreach log, cost summary, and compliance checklist all updated.
+
+**Decided:**
+- **AWS Bedrock is the primary Claude path for Robin.** Rationale: Claude for Healthcare (announced Jan 2026) routes healthcare BAAs through AWS/GCP/Azure, Anthropic direct-BAA outreach has gone unanswered twice, and Bedrock adds zero latency of consequence while giving us a signed BAA on a timeline we control.
+- Keep a provider abstraction (`LLM_PROVIDER` env var → `llmClient.ts` wrapper). We retain `@anthropic-ai/sdk` alongside `@anthropic-ai/bedrock-sdk` so rollback is `fly secrets set LLM_PROVIDER=anthropic` — instant, no deploy.
+- Migration is gated on AWS model access approval + Artifact BAA signature. Code-side work (wrapper + call-site refactor) can be scaffolded immediately; flipping production traffic waits on AWS.
+- Anthropic direct is not dead — it stays as a parallel track. But we stop letting it block the trial shift.
+
+**Deferred:**
+- Actual code migration (llmClient.ts wrapper + the 13 call sites across robin-think, clinical-surfacing, differential-expander, robin-chat, generate-note, detect-encounter, clarification-questions, parse-patients, onboarding-interview, note/finalize, agent/act, agent/procedure-qa) — waits on AWS account setup + Bedrock model access approval + Artifact BAA signature.
+- Any production traffic shift — waits on Bedrock eval parity run (13/13 MDM + 18/18 surfacing + 12/12 differential at temp 0 must match Anthropic direct).
+
+**Next:** AWS account creation, request Bedrock model access for Claude Sonnet 4 + Haiku 4.5 in us-east-1, download signed BAA from AWS Artifact, scaffold `src/lib/llmClient.ts` wrapper. In parallel: continue Fly.io BAA (Scale plan) and Supabase BAA (Team + HIPAA add-on) outreach.
+
+---
+
 ### 2026-04-14 — Memory aggregator + typed reader (item 16.5, commit 4/4 — item 16.5 complete)
 **Built:**
 - `src/app/api/shift/close/route.ts` — POST, auth-gated, ownership-verified. Calls `aggregateShiftToLongitudinal(supabase, shiftId, physicianId)`. Returns `{ ok, newObservations[] }`. The `newObservations` field is the delta detection output — reserved for a future shift-close reconciliation UI, not consumed client-side yet.

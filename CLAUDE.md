@@ -23,7 +23,7 @@ E&M billing reconciliation, mid-shift audits, and post-discharge voice callbacks
 | Database | Supabase | `robin-health` org, `robin-dev` project, RLS enabled from day one |
 | Auth | Supabase GitHub OAuth | `/src/app/auth/callback/route.ts` |
 | ASR | Deepgram | `nova-2-medical` model, WebSocket streaming, diarization enabled |
-| LLM | Claude via Anthropic API | `claude-sonnet-4-20250514` throughout |
+| LLM | Claude via Anthropic API (today) → AWS Bedrock (planned, 2026-04-21 pivot) | `claude-sonnet-4-20250514` throughout. Migration plan: `/docs/bedrock-migration-plan.md` |
 | Agentic loop | Claude tool-use via `/api/robin-think` | SSE streaming, 5-tool MDM pipeline |
 | Voice callbacks | Twilio + ElevenLabs or Deepgram TTS | Designed, not yet built |
 
@@ -496,15 +496,19 @@ the SESSIONS.md entry is short — but it still exists.
 
 ## BAA Status (Required Before Real PHI)
 
-| Vendor | BAA Status |
-|---|---|
-| Supabase | Available (HIPAA-eligible plan required) |
-| Anthropic | Available (Enterprise plan) |
-| Deepgram | Available |
-| Twilio | Available |
-| ElevenLabs | Available |
+| Vendor | BAA Status | Notes |
+|---|---|---|
+| Fly.io | Outreach in progress | Scale plan required; primary infra BAA |
+| **AWS Bedrock** | **Outreach in progress** | **Primary Claude path — Artifact BAA, Sonnet 4 + Haiku 4.5 in us-east-1. See `/docs/bedrock-migration-plan.md`** |
+| Supabase | Outreach in progress | Team plan + HIPAA add-on required |
+| Deepgram | Reply received 2026-04-14 | Available on paid plan |
+| Anthropic (direct) | **Deprioritized** | Two unanswered outreach attempts. Claude for Healthcare routes healthcare BAAs via AWS/GCP/Azure. Kept as parallel track but not blocking. |
+| Twilio | Not yet contacted | For voice-callback feature (post-design-partner) |
+| ElevenLabs | Not yet contacted | For voice-callback feature (post-design-partner) |
 
-**None signed yet. Do not process real patient data until all BAAs are in place.**
+**None signed yet. Do not process real patient data until the minimum set (Fly.io + Bedrock + Supabase + Deepgram) is in place.**
+
+**Strategic shift (2026-04-21):** AWS Bedrock is now the primary Claude path for Robin, not Anthropic direct. Full rationale and migration plan in `/docs/bedrock-migration-plan.md`. Current `@anthropic-ai/sdk` calls will move behind a `src/lib/llmClient.ts` wrapper with an `LLM_PROVIDER` env var so rollback is a single `fly secrets set` away.
 
 ---
 
@@ -522,7 +526,8 @@ the SESSIONS.md entry is short — but it still exists.
 8. ~~**`runRobinThink` extraction + eval harness**~~ ✅ Done — pure function in `src/lib/robinThink.ts`, `/evals` harness with 3 fixtures, temperature: 0 deterministic mode
 9. ~~**Fix `robin-think` clinical coding rules**~~ ✅ Done — added critical care (99291/99292) section, tightened Rx drug mgmt definition (excludes chronic home meds, excludes OTC), added explicit data point counting with worked example, added encounter-specific gap rules (pregnancy/ectopic on female + abd pain, ACS on chest pain, etc.), fixed HPI threshold (score≥4 = extended). Regression: 3/3 fixtures pass deterministically at temp 0.
 10. **AudioWorklet migration** — replace deprecated `ScriptProcessorNode` (TD-001)
-11. **BAAs** — all five vendors
+11. **BAAs** — minimum set (Fly.io + AWS Bedrock + Supabase + Deepgram). Anthropic direct deprioritized per 2026-04-21 pivot.
+11a. **AWS Bedrock migration** — `src/lib/llmClient.ts` wrapper + `LLM_PROVIDER` env var + refactor 13 Claude call sites + Bedrock eval parity run (13/13 MDM + 18/18 surfacing + 12/12 differential at temp 0). Gated on AWS model access + Artifact BAA. Full scoping in `/docs/bedrock-migration-plan.md`.
 12. ~~**Expand WoZ corpus**~~ ✅ Done — full 13-encounter regression suite, all passing deterministic-with-drift-tolerance at temp 0. Covers: abd pain workup, septic shock, mech LBP, STEMI, stroke+TNK, PE (over-trigger guard), peds OM, elderly mets, ACE-I rash, panic/PE differential, intoxicated head trauma, dental, ankle sprain
 13. ~~**Wizard of Oz validation**~~ ✅ Rounds 1–3 done — 13/13 passing; CC fix proven on STEMI + stroke + septic shock; over-trigger guard proven on PE; peds rules don't over-fire; tone test passed on dental drug-seeking nuance; `vague_workup_language` gap added
 14. ~~**First trial shift**~~ → see item 22
