@@ -2,9 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createEmptyNote } from "@/lib/robinTypes";
 import type { EncounterNote } from "@/lib/robinTypes";
 import { setShiftPattern } from "@/lib/memory";
-import Anthropic from "@anthropic-ai/sdk";
-
-const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
+import { llm, resolveModel } from "@/lib/llmClient";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -715,8 +713,8 @@ async function handleDischargeInstructions(
   const cc = encounter.chief_complaint || "general";
   const demo = [encounter.age, encounter.gender].filter(Boolean).join("");
 
-  const message = await client.messages.create({
-    model: "claude-haiku-4-5-20251001",
+  const message = await llm.messages.create({
+    model: resolveModel("haiku-4-5"),
     max_tokens: 1000,
     system: `Generate patient-friendly ED discharge instructions. Be clear, concise, and actionable. Include: diagnosis summary, home care, medications if applicable, return precautions (when to come back to the ER), and follow-up recommendations. Use simple language a patient can understand. Do not use medical jargon.`,
     messages: [
@@ -763,8 +761,8 @@ async function handleFinalDiagnosis(
   }
 
   // Map to ICD-10 via Claude
-  const message = await client.messages.create({
-    model: "claude-haiku-4-5-20251001",
+  const message = await llm.messages.create({
+    model: resolveModel("haiku-4-5"),
     max_tokens: 300,
     system: `Map a clinical diagnosis to ICD-10 codes. Return JSON only.
 Format: { "diagnosis": "cleaned diagnosis text", "icd10": "K35.2", "icd10_description": "Acute appendicitis with perforation", "confidence": 0.92, "alternatives": [{"code": "K35.89", "description": "..."}] }
@@ -821,8 +819,8 @@ async function handleConsultLog(
   }
 
   // Parse consult from natural language
-  const message = await client.messages.create({
-    model: "claude-haiku-4-5-20251001",
+  const message = await llm.messages.create({
+    model: resolveModel("haiku-4-5"),
     max_tokens: 200,
     system: `Extract consult information from a physician's statement. Return JSON only.
 Format: { "service": "Orthopedic Surgery", "physician": "Spock" or null, "confidence": 0.9 }`,
@@ -909,8 +907,8 @@ async function handleEncounterUpdate(
   rawText: string
 ) {
   // Parse the update command
-  const message = await client.messages.create({
-    model: "claude-haiku-4-5-20251001",
+  const message = await llm.messages.create({
+    model: resolveModel("haiku-4-5"),
     max_tokens: 200,
     system: `Extract encounter update from a physician's command. Return JSON only.
 Format: { "encounterNumber": 1, "field": "patient_name", "value": "Gonzalez", "confidence": 0.85 }
@@ -1038,8 +1036,8 @@ interface ParsedDisposition {
 
 async function parseBriefing(rawText: string): Promise<ParsedBriefing> {
   try {
-    const message = await client.messages.create({
-      model: "claude-haiku-4-5-20251001",
+    const message = await llm.messages.create({
+      model: resolveModel("haiku-4-5"),
       max_tokens: 500,
       system: `Extract patients from a physician's verbal briefing. Return JSON only.
 Format: { "patients": [{ "age": 74, "gender": "F", "chiefComplaint": "Abdominal pain", "room": "4", "name": "Johnson" }], "confidence": 0.85 }
@@ -1059,8 +1057,8 @@ Rules: age integer or null, gender "M"/"F"/"X"/null, chiefComplaint standardized
 
 async function parseDisposition(rawText: string): Promise<ParsedDisposition> {
   try {
-    const message = await client.messages.create({
-      model: "claude-haiku-4-5-20251001",
+    const message = await llm.messages.create({
+      model: resolveModel("haiku-4-5"),
       max_tokens: 300,
       system: `Extract disposition from a physician's command. Return JSON only.
 Format: { "diagnosis": string|null, "disposition": "admitted"|"discharged"|"transferred"|"AMA"|"observation"|null, "acceptingPhysician": string|null, "confidence": 0.85 }`,

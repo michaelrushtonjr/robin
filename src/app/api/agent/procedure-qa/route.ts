@@ -1,9 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { createEmptyNote } from "@/lib/robinTypes";
 import type { EncounterNote } from "@/lib/robinTypes";
-import Anthropic from "@anthropic-ai/sdk";
-
-const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
+import { llm, resolveModel } from "@/lib/llmClient";
 
 // ─── Procedure KB — question sequences ──────────────────────────────────────
 
@@ -210,8 +208,8 @@ async function assembleProcedureNote(
       .map(([q, a]) => `Q: ${q}\nA: ${a}`)
       .join("\n\n");
 
-    const message = await client.messages.create({
-      model: "claude-haiku-4-5-20251001",
+    const message = await llm.messages.create({
+      model: resolveModel("haiku-4-5"),
       max_tokens: 800,
       system: `Assemble a structured procedure note from Q&A responses. Use this format:
 

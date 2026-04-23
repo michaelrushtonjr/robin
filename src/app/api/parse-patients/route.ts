@@ -1,7 +1,5 @@
 import { NextResponse } from "next/server";
-import Anthropic from "@anthropic-ai/sdk";
-
-const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
+import { llm, resolveModel } from "@/lib/llmClient";
 
 export async function POST(request: Request) {
   const { command } = await request.json();
@@ -10,8 +8,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ patients: [] });
   }
 
-  const message = await client.messages.create({
-    model: "claude-haiku-4-5-20251001",
+  const message = await llm.messages.create({
+    model: resolveModel("haiku-4-5"),
     max_tokens: 400,
     system: `Extract a list of patients from a physician's verbal briefing to their AI copilot.
 

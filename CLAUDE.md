@@ -126,6 +126,7 @@ E&M billing reconciliation, mid-shift audits, and post-discharge voice callbacks
     useShiftAmbient.ts            ← Full shift-level ambient intelligence (see below)
     useWakeLock.ts                ← Screen wake lock for shift mode
   /lib
+    llmClient.ts                  ← Unified Anthropic/Bedrock client + resolveModel(). Only file that touches the SDK constructors. Provider picked by LLM_PROVIDER env var (defaults to "anthropic"). See `/docs/bedrock-migration-plan.md`.
     deepgram.ts                   ← WebSocket factory, config, types
     robinPersona.ts               ← ROBIN_IDENTITY + buildRobinContext() + translatePreferences()
     robinSystemPrompt.ts          ← System prompt for note generation
@@ -527,7 +528,7 @@ the SESSIONS.md entry is short — but it still exists.
 9. ~~**Fix `robin-think` clinical coding rules**~~ ✅ Done — added critical care (99291/99292) section, tightened Rx drug mgmt definition (excludes chronic home meds, excludes OTC), added explicit data point counting with worked example, added encounter-specific gap rules (pregnancy/ectopic on female + abd pain, ACS on chest pain, etc.), fixed HPI threshold (score≥4 = extended). Regression: 3/3 fixtures pass deterministically at temp 0.
 10. **AudioWorklet migration** — replace deprecated `ScriptProcessorNode` (TD-001)
 11. **BAAs** — minimum set (Fly.io + AWS Bedrock + Supabase + Deepgram). Anthropic direct deprioritized per 2026-04-21 pivot.
-11a. **AWS Bedrock migration** — `src/lib/llmClient.ts` wrapper + `LLM_PROVIDER` env var + refactor 13 Claude call sites + Bedrock eval parity run (13/13 MDM + 18/18 surfacing + 12/12 differential at temp 0). Gated on AWS model access + Artifact BAA. Full scoping in `/docs/bedrock-migration-plan.md`.
+11a. **AWS Bedrock migration** — ⏳ Partially complete (2026-04-22). `src/lib/llmClient.ts` wrapper shipped; all 12 Claude call sites migrated (3 libs + 9 routes; the 3 SSE wrapper routes inherit from the libs); both SDKs installed for rollback parity; `LLM_PROVIDER` defaults to `"anthropic"` so this commit is a production no-op. Evals green on the wrapper at temp 0: 13/13 MDM + 18/18 surfacing + 12/12 differential. **Remaining:** AWS Artifact BAA + Bedrock model access for Sonnet 4 + Haiku 4.5 → flip `LLM_PROVIDER=bedrock` in Fly secrets → re-run the three eval suites on Bedrock for parity. Full scoping in `/docs/bedrock-migration-plan.md`.
 12. ~~**Expand WoZ corpus**~~ ✅ Done — full 13-encounter regression suite, all passing deterministic-with-drift-tolerance at temp 0. Covers: abd pain workup, septic shock, mech LBP, STEMI, stroke+TNK, PE (over-trigger guard), peds OM, elderly mets, ACE-I rash, panic/PE differential, intoxicated head trauma, dental, ankle sprain
 13. ~~**Wizard of Oz validation**~~ ✅ Rounds 1–3 done — 13/13 passing; CC fix proven on STEMI + stroke + septic shock; over-trigger guard proven on PE; peds rules don't over-fire; tone test passed on dental drug-seeking nuance; `vague_workup_language` gap added
 14. ~~**First trial shift**~~ → see item 22

@@ -1,4 +1,5 @@
-import Anthropic from "@anthropic-ai/sdk";
+import type Anthropic from "@anthropic-ai/sdk";
+import { llm, resolveModel } from "@/lib/llmClient";
 import { deriveOverallMDM } from "./mdmScoring";
 import type {
   MDMScaffold,
@@ -450,9 +451,6 @@ export const ROBIN_THINK_TOOLS: Anthropic.Tool[] = [
 // ─── Core loop ────────────────────────────────────────────────────────────────
 
 const MAX_ITERATIONS = 8;
-const MODEL = "claude-sonnet-4-20250514";
-
-const anthropic = new Anthropic();
 
 export async function runRobinThink(
   opts: RunRobinThinkOptions
@@ -505,8 +503,8 @@ Run your full MDM audit now. Call tools in order.
   while (!done && iterations < MAX_ITERATIONS) {
     iterations++;
 
-    const response = await anthropic.messages.create({
-      model: MODEL,
+    const response = await llm.messages.create({
+      model: resolveModel("sonnet-4"),
       max_tokens: 2048,
       system: ROBIN_THINK_SYSTEM,
       tools: ROBIN_THINK_TOOLS,

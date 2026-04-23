@@ -1,8 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { buildRobinContext } from "@/lib/robinPersona";
-import Anthropic from "@anthropic-ai/sdk";
-
-const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
+import type Anthropic from "@anthropic-ai/sdk";
+import { llm, resolveModel } from "@/lib/llmClient";
 
 export async function POST(request: Request) {
   const supabase = await createClient();
@@ -40,8 +39,8 @@ export async function POST(request: Request) {
   ];
 
   // Stream response
-  const stream = client.messages.stream({
-    model: "claude-sonnet-4-20250514",
+  const stream = llm.messages.stream({
+    model: resolveModel("sonnet-4"),
     max_tokens: 1024,
     system: systemPrompt,
     messages: claudeMessages,

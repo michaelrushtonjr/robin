@@ -1,4 +1,5 @@
-import Anthropic from "@anthropic-ai/sdk";
+import type Anthropic from "@anthropic-ai/sdk";
+import { llm, resolveModel } from "@/lib/llmClient";
 import type {
   BadnessBucket,
   DifferentialAddition,
@@ -235,9 +236,6 @@ export const DIFFERENTIAL_EXPANDER_TOOLS: Anthropic.Tool[] = [
 
 const MAX_ITERATIONS = 8;
 const MAX_ADDS = 4;
-const MODEL = "claude-sonnet-4-20250514";
-
-const anthropic = new Anthropic();
 
 export async function runDifferentialExpander(
   opts: RunDifferentialExpanderOptions
@@ -289,8 +287,8 @@ Then call done_expanding.
   while (!done && iterations < MAX_ITERATIONS) {
     iterations++;
 
-    const response = await anthropic.messages.create({
-      model: MODEL,
+    const response = await llm.messages.create({
+      model: resolveModel("sonnet-4"),
       max_tokens: 2048,
       system: DIFFERENTIAL_EXPANDER_SYSTEM,
       tools: DIFFERENTIAL_EXPANDER_TOOLS,

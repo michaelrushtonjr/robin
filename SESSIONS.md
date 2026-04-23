@@ -9,6 +9,38 @@ Keep each entry tight — 5–10 lines max. This is a log, not documentation.
 
 ## Sessions
 
+### 2026-04-22 — Bedrock wrapper scaffold + 12 call-site migration
+**Built:**
+- `src/lib/llmClient.ts` — unified client + `resolveModel(name)` helper. Picks `Anthropic` or `AnthropicBedrock` at module-load based on `LLM_PROVIDER` env var. `MODEL_MAP` translates logical names (`sonnet-4`, `haiku-4-5`) to provider-specific IDs (direct vs. `anthropic.*-v1:0` Bedrock IDs).
+- Migrated 12 Claude call sites off direct `new Anthropic()` and hardcoded model strings:
+  - Libs (eval-covered, migrated first): `robinThink.ts`, `clinicalSurfacing.ts`, `differentialExpander.ts` — removed module-level `const MODEL` and swapped to inline `resolveModel("sonnet-4")`.
+  - Routes: `robin-chat`, `parse-patients`, `generate-note`, `clarification-questions`, `note/finalize`, `agent/procedure-qa`, `onboarding-interview`, `detect-encounter`, `agent/act` (6 call sites in that last one — prompt said 7, grep confirmed 6).
+  - Where `Anthropic.Tool` / `Anthropic.MessageParam` / etc. were used as namespace types, the value import flipped to `import type Anthropic from "@anthropic-ai/sdk"` so types keep resolving at compile time.
+- Installed `@anthropic-ai/bedrock-sdk` alongside `@anthropic-ai/sdk` (both stay).
+- CLAUDE.md file map + build-queue item 11a updated to reflect "wrapper + call sites done, awaiting AWS Bedrock access".
+
+**Fixed:**
+- Clean `rm -rf node_modules && npm install` during this task as a side effect — the pre-existing `tslib.es6.mjs` in `node_modules/tslib` was truncated to 34 lines (1668 bytes) from a prior partial install, which broke Turbopack. Fresh install restored the full ~17KB file and the build passed clean.
+
+**Decided:**
+- Keep both SDKs installed for rollback parity. `LLM_PROVIDER=anthropic` is the default so this commit is a pure no-op in production — identical behavior until Fly secrets are flipped.
+- Type-only imports (`import type Anthropic from "@anthropic-ai/sdk"`) are the right escape hatch for files that use the namespace purely as types — erased at compile, no runtime dependency on the direct SDK beyond the wrapper.
+- Fixture `10-panic-pe-diff` was observed to flake at temp 0 — confirmed as pre-existing Claude-side non-determinism (same failure mode reproduced on baseline `141837a` with the wrapper stashed out). Not wrapper-caused, so migration proceeded. Final verification run came back 13/13.
+
+**Deferred:**
+- Flipping `LLM_PROVIDER=bedrock` in Fly secrets — gated on AWS Artifact BAA + Bedrock model access approval for Sonnet 4 + Haiku 4.5 in `us-east-1`.
+- Running the eval suites against Bedrock itself (parity check). Today's run confirmed the wrapper is transparent on the Anthropic path only.
+
+**Next:** AWS account setup → Artifact BAA acceptance → Bedrock model-access request for Sonnet 4 + Haiku 4.5 → `fly secrets set LLM_PROVIDER=bedrock` → re-run all three eval suites on Bedrock and confirm parity (13/13 MDM + 18/18 surfacing + 12/12 differential at temp 0).
+
+**Validation:**
+- `npm run build` — clean.
+- `npx tsx evals/runEvals.ts` — 13/13 PASS (temp 0, ~41s).
+- `npx tsx evals/surfacing/runSurfacingEvals.ts` — 18/18 PASS (temp 0, ~12s).
+- `npx tsx evals/differential/runDifferentialEvals.ts` — 12/12 PASS (temp 0, ~11s).
+
+---
+
 ### 2026-04-21 — BAA strategy pivot to AWS Bedrock + migration plan
 **Built:**
 - `docs/bedrock-migration-plan.md` — engineering scoping doc (~280 lines). AWS prerequisites (account → Artifact BAA → model access → least-privilege IAM policy), `src/lib/llmClient.ts` wrapper design with full code sketch + `MODEL_MAP` + `LLM_PROVIDER` env var selector, enumeration of all 13 Claude call sites across the codebase, day-by-day execution sequence, validation plan (13/13 MDM + 18/18 surfacing + 12/12 differential eval suites at temp 0 in both providers), rollback plan (`fly secrets set LLM_PROVIDER=anthropic`), risk register, open follow-ups.

@@ -1,4 +1,5 @@
-import Anthropic from "@anthropic-ai/sdk";
+import type Anthropic from "@anthropic-ai/sdk";
+import { llm, resolveModel } from "@/lib/llmClient";
 import type {
   ClinicalToolName,
   ClinicalToolSurfacing,
@@ -480,9 +481,6 @@ function coercePreFill(
 // ─── Core loop ───────────────────────────────────────────────────────────────
 
 const MAX_ITERATIONS = 8;
-const MODEL = "claude-sonnet-4-20250514";
-
-const anthropic = new Anthropic();
 
 export async function runClinicalSurfacing(
   opts: RunClinicalSurfacingOptions
@@ -526,8 +524,8 @@ Surface clinical decision tools per your library. Then call done_surfacing.
   while (!done && iterations < MAX_ITERATIONS) {
     iterations++;
 
-    const response = await anthropic.messages.create({
-      model: MODEL,
+    const response = await llm.messages.create({
+      model: resolveModel("sonnet-4"),
       max_tokens: 2048,
       system: CLINICAL_SURFACING_SYSTEM,
       tools: CLINICAL_SURFACING_TOOLS,

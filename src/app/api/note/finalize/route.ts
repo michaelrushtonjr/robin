@@ -2,9 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { buildRobinContext } from "@/lib/robinPersona";
 import type { EncounterNote } from "@/lib/robinTypes";
 import { detectAddressedGaps, markGapsAddressed } from "@/lib/memory";
-import Anthropic from "@anthropic-ai/sdk";
-
-const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
+import { llm, resolveModel } from "@/lib/llmClient";
 
 export async function POST(request: Request) {
   const supabase = await createClient();
@@ -127,8 +125,8 @@ export async function POST(request: Request) {
   const patientContext = `Patient: ${demo || "Unknown"}, Chief complaint: ${encounter.chief_complaint || "Unknown"}`;
 
   // Ask Claude to polish
-  const message = await client.messages.create({
-    model: "claude-sonnet-4-20250514",
+  const message = await llm.messages.create({
+    model: resolveModel("sonnet-4"),
     max_tokens: 4096,
     system: `${systemPrompt}
 

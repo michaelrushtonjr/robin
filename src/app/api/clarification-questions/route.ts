@@ -1,7 +1,5 @@
 import { NextResponse } from "next/server";
-import Anthropic from "@anthropic-ai/sdk";
-
-const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
+import { llm, resolveModel } from "@/lib/llmClient";
 
 export async function POST(request: Request) {
   const { transcript, chiefComplaint, disposition } = await request.json();
@@ -10,8 +8,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ questions: [] });
   }
 
-  const message = await client.messages.create({
-    model: "claude-haiku-4-5-20251001",
+  const message = await llm.messages.create({
+    model: resolveModel("haiku-4-5"),
     max_tokens: 800,
     system: `You are Robin, an AI shift copilot for emergency medicine. A physician has just dispo'd a patient (discharged or admitted). Ask 2–3 targeted clarification questions to fill specific documentation gaps before the note is finalized.
 
